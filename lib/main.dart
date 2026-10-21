@@ -204,6 +204,13 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                       ),
               ),
             ),
+            if (_searchController.text.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Search results will appear when verified cricket data is connected.',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
               children: [
