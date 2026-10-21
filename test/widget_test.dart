@@ -15,6 +15,9 @@ void main() {
     expect(find.text('Cricket matches'), findsOneWidget);
     expect(find.text('Live cricket data is not connected yet'), findsOneWidget);
     expect(find.text('Live score'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Scorecard'));
+    await tester.pumpAndSettle();
     expect(find.text('Scorecard'), findsOneWidget);
   });
 
@@ -34,6 +37,8 @@ void main() {
     await tester.pumpWidget(const ScoreXApp());
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Preview match centre'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Preview match centre'));
     await tester.pumpAndSettle();
 
