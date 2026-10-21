@@ -110,14 +110,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     });
   }
 
-  Future<void> _toggleFavorite(String matchId) async {
-    final next = Set<String>.from(_favoriteIds);
-    if (!next.add(matchId)) next.remove(matchId);
-    setState(() => _favoriteIds = next);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_favoritesKey, next.toList());
-  }
-
   Future<void> _setNotifications(bool value) async {
     setState(() => _notificationsEnabled = value);
     final prefs = await SharedPreferences.getInstance();
