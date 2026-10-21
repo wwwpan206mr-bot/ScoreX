@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'lib/**'
+      - 'test/**'
       - 'pubspec.yaml'
       - '.github/workflows/android-build.yml'
       - 'cloudflare/**'
