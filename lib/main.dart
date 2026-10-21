@@ -14,7 +14,26 @@ class ScoreXApp extends StatefulWidget {
 }
 
 class _ScoreXAppState extends State<ScoreXApp> {
+  static const _themeKey = 'scorex_dark_mode';
   bool _darkMode = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _darkMode = prefs.getBool(_themeKey) ?? true);
+  }
+
+  Future<void> _setTheme(bool value) async {
+    setState(() => _darkMode = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_themeKey, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +76,7 @@ class _ScoreXAppState extends State<ScoreXApp> {
       ),
       home: ScoreHomePage(
         darkMode: _darkMode,
-        onThemeChanged: (value) => setState(() => _darkMode = value),
+        onThemeChanged: _setTheme,
       ),
     );
   }
