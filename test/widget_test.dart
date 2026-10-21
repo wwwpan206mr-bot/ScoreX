@@ -54,7 +54,7 @@ void main() {
     await tester.tap(find.text('Live score').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Live score'), findsOneWidget);
+    expect(find.text('Live score'), findsNWidgets(2));
     expect(find.text('Waiting for live API connection'), findsOneWidget);
     expect(find.text('No demo scores are displayed.'), findsNothing);
   });
