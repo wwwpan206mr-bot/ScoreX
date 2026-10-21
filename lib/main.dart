@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/feature_pages.dart';
 
 void main() => runApp(const ScoreXApp());
 
@@ -351,10 +352,16 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   Widget _featureGrid(BuildContext context) {
     final features = <({IconData icon, String title, String subtitle})>[
-      (icon: Icons.sports_cricket, title: 'Live score', subtitle: 'Real-time match updates'),
-      (icon: Icons.speaker_notes_outlined, title: 'Commentary', subtitle: 'Ball-by-ball details'),
+      (icon: Icons.sports_cricket, title: 'Live score', subtitle: 'Live match centre'),
+      (icon: Icons.speaker_notes_outlined, title: 'Commentary', subtitle: 'Ball-by-ball'),
       (icon: Icons.table_chart_outlined, title: 'Scorecard', subtitle: 'Batting and bowling'),
       (icon: Icons.insights_outlined, title: 'Statistics', subtitle: 'Rates and partnerships'),
+      (icon: Icons.event_available_outlined, title: 'Fixtures & Series', subtitle: 'Schedules and tournaments'),
+      (icon: Icons.play_circle_outline, title: 'News & Videos', subtitle: 'Stories and highlights'),
+      (icon: Icons.groups_2_outlined, title: 'Teams & Players', subtitle: 'Squads and profiles'),
+      (icon: Icons.leaderboard_outlined, title: 'Rankings & Compare', subtitle: 'Rankings and stats'),
+      (icon: Icons.picture_in_picture_alt_outlined, title: 'Mini score widget', subtitle: 'Compact score view'),
+      (icon: Icons.notifications_active_outlined, title: 'Match alerts', subtitle: 'Personal notifications'),
     ];
     return GridView.builder(
       shrinkWrap: true,
@@ -364,23 +371,29 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         crossAxisCount: 2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        childAspectRatio: 1.45,
+        childAspectRatio: 1.28,
       ),
       itemBuilder: (context, index) {
         final feature = features[index];
         return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(feature.icon, color: scoreXGold, size: 24),
-                const SizedBox(height: 8),
-                Text(feature.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 3),
-                Text(feature.subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-              ],
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => ScoreXFeaturePage(title: feature.title),
+            )),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(feature.icon, color: scoreXGold, size: 25),
+                  const SizedBox(height: 9),
+                  Text(feature.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text(feature.subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
             ),
           ),
         );
