@@ -7,6 +7,7 @@ on:
     paths:
       - 'lib/**'
       - 'test/**'
+      - 'README.md'
       - 'pubspec.yaml'
       - '.github/workflows/android-build.yml'
       - 'cloudflare/**'
@@ -42,10 +43,16 @@ jobs:
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: flutter build apk --debug --dart-define=API_BASE_URL="${API_BASE_URL}"
-      - name: Upload APK artifact
+      - name: Build release-mode Android App Bundle
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: flutter build appbundle --release --dart-define=API_BASE_URL="${API_BASE_URL}"
+      - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: scorex-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: scorex-android-builds
+          path: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 7
