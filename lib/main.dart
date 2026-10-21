@@ -59,6 +59,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       final response = await http.get(uri).timeout(const Duration(seconds: 15));
       if (response.statusCode != 200) throw Exception('Server returned HTTP ${response.statusCode}');
       final json = jsonDecode(response.body);
+      if (json is Map && json['status'] == 'failure') {
+        throw Exception(json['reason'] ?? json['message'] ?? 'Cricket API request failed');
+      }
       if (json is Map && json['data'] is List) {
         matches = json['data'] as List;
       } else if (json is Map && json['matches'] is List) {
@@ -66,7 +69,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       } else if (json is List) {
         matches = json;
       } else {
-        throw Exception('Unexpected API response format');
+        throw Exception(json is Map
+            ? (json['message'] ?? json['reason'] ?? 'Unexpected API response format')
+            : 'Unexpected API response format');
       }
     } catch (e) {
       error = 'Could not load scores. Check the API server setup and connection.';
@@ -79,9 +84,32 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     if (item is! Map) return fallback;
     for (final key in keys) {
       final value = item[key];
-      if (value != null && value.toString().trim().isNotEmpty) return value.toString();
+      if (value == null) continue;
+      if (value is List && key == 'score') {
+        final formatted = formatScores(value);
+        if (formatted.isNotEmpty) return formatted;
+      } else if (value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
     }
     return fallback;
+  }
+
+  String formatScores(List<dynamic> scores) {
+    return scores.map((entry) {
+      if (entry is! Map) return entry.toString();
+      final runs = entry['r'];
+      final wickets = entry['w'];
+      final overs = entry['o'];
+      final inning = entry['inning'];
+      final figures = [
+        if (runs != null) runs.toString(),
+        if (wickets != null) '($wickets wkts)',
+        if (overs != null) 'in $overs overs',
+      ].join(' ');
+      if (figures.isEmpty) return inning?.toString() ?? '';
+      return inning == null ? figures : '$inning: $figures';
+    }).where((line) => line.isNotEmpty).join('\n');
   }
 
   @override
@@ -165,7 +193,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     final teams = match is Map ? match['teams'] : null;
     final team1 = teams is List && teams.isNotEmpty ? teams[0].toString() : valueOf(match, ['team1', 'teamA', 'name']);
     final team2 = teams is List && teams.length > 1 ? teams[1].toString() : valueOf(match, ['team2', 'teamB', 'name2']);
-    final status = valueOf(match, ['status', 'matchStatus', 'matchType'], 'Match status unavailable');
+    final status = valueOf(match, ['status', 'matchStatus'], 'Match status unavailable');
     final score = valueOf(match, ['score', 'scores', 'scoreDetails'], '');
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -179,7 +207,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         Text(team1, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 5),
         Text(team2, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        if (score.isNotEmpty) ...[const SizedBox(height: 10), Text(score, style: const TextStyle(color: Color(0xFFFFC857), fontWeight: FontWeight.bold))],
+        if (score.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(score, style: const TextStyle(color: Color(0xFFFFC857), fontWeight: FontWeight.bold)),
+        ],
         const Divider(height: 22, color: Color(0xFF29483B)),
         Text(status, style: const TextStyle(color: Color(0xFFADC4B8), fontSize: 12)),
       ])),
