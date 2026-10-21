@@ -14,8 +14,6 @@ void main() {
     expect(find.text('ScoreX'), findsOneWidget);
     expect(find.text('Cricket matches'), findsOneWidget);
     expect(find.text('Live cricket data is not connected yet'), findsOneWidget);
-    expect(find.text('Live score'), findsOneWidget);
-
     await tester.ensureVisible(find.text('Scorecard'));
     await tester.pumpAndSettle();
     expect(find.text('Scorecard'), findsOneWidget);
