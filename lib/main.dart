@@ -127,6 +127,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     ));
   }
 
+  void _openMatchCentre() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => const ScoreXMatchCentrePage(),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFavorites = _navigationIndex == 1;
@@ -307,6 +313,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
             if (showAction) ...[
               const SizedBox(height: 15),
               OutlinedButton.icon(
+                onPressed: _openMatchCentre,
+                icon: const Icon(Icons.dashboard_customize_outlined),
+                label: const Text('Preview match centre'),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
                 onPressed: _openSettings,
                 icon: const Icon(Icons.tune),
                 label: const Text('App settings'),
@@ -417,6 +429,111 @@ class ScoreXSettingsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+class ScoreXMatchCentrePage extends StatelessWidget {
+  const ScoreXMatchCentrePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Match Centre'),
+          bottom: const TabBar(
+            isScrollable: true,
+            tabs: [
+              Tab(text: 'Overview', icon: Icon(Icons.scoreboard_outlined)),
+              Tab(text: 'Commentary', icon: Icon(Icons.speaker_notes_outlined)),
+              Tab(text: 'Scorecard', icon: Icon(Icons.table_chart_outlined)),
+              Tab(text: 'Squads', icon: Icon(Icons.groups_outlined)),
+              Tab(text: 'Stats', icon: Icon(Icons.insights_outlined)),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            _MatchCentrePanel(
+              icon: Icons.sports_cricket,
+              title: 'Match overview',
+              description: 'The selected teams, score, innings, venue, toss and match status will appear here when real match data is connected.',
+            ),
+            _MatchCentrePanel(
+              icon: Icons.speaker_notes_outlined,
+              title: 'Ball-by-ball commentary',
+              description: 'Each delivery, over summary, boundary and wicket will be shown here only when the data provider supplies genuine commentary.',
+            ),
+            _MatchCentrePanel(
+              icon: Icons.table_chart_outlined,
+              title: 'Full scorecard',
+              description: 'Batting figures, bowling figures, extras, innings totals and fall of wickets will appear here when a scorecard feed is available.',
+            ),
+            _MatchCentrePanel(
+              icon: Icons.groups_outlined,
+              title: 'Playing XI and squads',
+              description: 'Team squads, playing XI, captain, wicketkeeper and player roles will appear here when supplied by the provider.',
+            ),
+            _MatchCentrePanel(
+              icon: Icons.insights_outlined,
+              title: 'Match statistics',
+              description: 'Run rates, partnerships, recent balls and run progression will be calculated from verified match data when available.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchCentrePanel extends StatelessWidget {
+  const _MatchCentrePanel({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+            child: Column(
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 42, color: scoreXGold),
+                const SizedBox(height: 14),
+                Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 10),
+                Text(description, textAlign: TextAlign.center, style: const TextStyle(height: 1.5, color: Colors.grey)),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 10),
+                const Text(
+                  'Waiting for live API connection',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w700, color: scoreXGold),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'No fictional scores or player statistics are shown.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
