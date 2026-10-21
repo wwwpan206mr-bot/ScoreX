@@ -510,7 +510,7 @@ class _MatchCentrePanel extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
             child: Column(
               children: [
-                const Icon(Icons.cloud_off_outlined, size: 42, color: scoreXGold),
+                Icon(icon, size: 42, color: scoreXGold),
                 const SizedBox(height: 14),
                 Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
