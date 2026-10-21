@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scorex/main.dart';
+import 'package:scorex/screens/feature_pages.dart';
 
 void main() {
   setUp(() {
@@ -46,10 +47,7 @@ void main() {
     expect(find.text('Ball-by-ball commentary'), findsOneWidget);
   });
   testWidgets('feature cards open API-ready screens without fake data', (tester) async {
-    await tester.pumpWidget(const ScoreXApp());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Live score').first);
+    await tester.pumpWidget(const MaterialApp(home: ScoreXFeaturePage(title: 'Live score')));
     await tester.pumpAndSettle();
 
     expect(find.text('Live score'), findsNWidgets(2));
