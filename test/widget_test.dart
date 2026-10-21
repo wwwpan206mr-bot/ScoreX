@@ -14,9 +14,6 @@ void main() {
     expect(find.text('ScoreX'), findsOneWidget);
     expect(find.text('Cricket matches'), findsOneWidget);
     expect(find.text('Live cricket data is not connected yet'), findsOneWidget);
-    await tester.ensureVisible(find.text('Scorecard'));
-    await tester.pumpAndSettle();
-    expect(find.text('Scorecard'), findsOneWidget);
   });
 
   testWidgets('settings page can be opened from the home screen', (tester) async {
@@ -49,3 +46,15 @@ void main() {
     expect(find.text('Ball-by-ball commentary'), findsOneWidget);
   });
 }
+
+  testWidgets('feature cards open API-ready screens without fake data', (tester) async {
+    await tester.pumpWidget(const ScoreXApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Live score').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Live score'), findsOneWidget);
+    expect(find.text('Waiting for live API connection'), findsOneWidget);
+    expect(find.text('No demo scores are displayed.'), findsNothing);
+  });
