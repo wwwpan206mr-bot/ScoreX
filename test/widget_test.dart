@@ -29,4 +29,20 @@ void main() {
     expect(find.text('Dark theme'), findsOneWidget);
     expect(find.text('Match notifications'), findsOneWidget);
   });
+
+  testWidgets('match centre preview has overview and cricket detail tabs', (tester) async {
+    await tester.pumpWidget(const ScoreXApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Preview match centre'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Match Centre'), findsOneWidget);
+    expect(find.text('Match overview'), findsOneWidget);
+    expect(find.text('Waiting for live API connection'), findsOneWidget);
+
+    await tester.tap(find.text('Commentary'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ball-by-ball commentary'), findsOneWidget);
+  });
 }
