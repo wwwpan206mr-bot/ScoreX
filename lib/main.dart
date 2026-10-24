@@ -323,19 +323,51 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        height: 76,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        selectedIndex: _navigationIndex,
-        onDestinationSelected: (value) => setState(() => _navigationIndex = value),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events), label: 'Series'),
-          NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket), label: 'Matches'),
-          NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Social'),
-          NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video), label: 'Videos'),
-          NavigationDestination(icon: Icon(Icons.more_horiz), selectedIcon: Icon(Icons.menu), label: 'More'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF091E19),
+          border: Border(top: BorderSide(color: Color(0x44FFC857), width: 1)),
+          boxShadow: [BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, -4))],
+        ),
+        child: SafeArea(
+          top: false,
+          child: NavigationBarTheme(
+            data: NavigationBarThemeData(
+              backgroundColor: const Color(0xFF091E19),
+              indicatorColor: const Color(0x44FFC857),
+              labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((states) =>
+                TextStyle(
+                  fontSize: 10,
+                  fontWeight: states.contains(WidgetState.selected) ? FontWeight.w900 : FontWeight.w600,
+                  color: states.contains(WidgetState.selected) ? scoreXGold : const Color(0xFFBCE7D7),
+                ),
+              ),
+              iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((states) =>
+                IconThemeData(
+                  size: states.contains(WidgetState.selected) ? 28 : 25,
+                  color: states.contains(WidgetState.selected) ? scoreXGold : const Color(0xFF63E6BE),
+                ),
+              ),
+            ),
+            child: NavigationBar(
+              height: 74,
+              elevation: 0,
+              backgroundColor: const Color(0xFF091E19),
+              animationDuration: const Duration(milliseconds: 330),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              selectedIndex: _navigationIndex,
+              onDestinationSelected: (value) => setState(() => _navigationIndex = value),
+              destinations: const [
+                NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
+                NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events_rounded), label: 'Series'),
+                NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket_rounded), label: 'Matches'),
+                NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups_rounded), label: 'Social'),
+                NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video_rounded), label: 'Videos'),
+                NavigationDestination(icon: Icon(Icons.more_horiz_rounded), selectedIcon: Icon(Icons.apps_rounded), label: 'More'),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
