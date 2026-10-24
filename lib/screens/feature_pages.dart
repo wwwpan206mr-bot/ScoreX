@@ -1,11 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../data/cricapi_match_repository.dart';
+import '../models/cricket_match.dart';
+import 'fixtures_calendar.dart';
 
 const Color _scoreXGold = Color(0xFFFFC857);
 
-class ScoreXFeaturePage extends StatelessWidget {
+class ScoreXFeaturePage extends StatefulWidget {
   const ScoreXFeaturePage({super.key, required this.title});
 
   final String title;
+
+  @override
+  State<ScoreXFeaturePage> createState() => _ScoreXFeaturePageState();
+}
+
+class _ScoreXFeaturePageState extends State<ScoreXFeaturePage> {
+  List<CricketMatch> matches = [];
+  String? error;
+  bool loading = true;
+  bool alerts = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => alerts = prefs.getBool('scorex_notifications_enabled') ?? false);
+    try {
+      final result = await const CricApiMatchRepository().getMatches();
+      if (!mounted) return;
+      setState(() { matches = result; loading = false; error = null; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { error = e.toString(); loading = false; });
+    }
+  }
+
+  Future<void> _toggle(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('scorex_notifications_enabled', value);
+    if (mounted) setState(() => alerts = value);
+  }
 
   static const Map<String, ({IconData icon, String subtitle, List<String> capabilities})> _content = {
     'Live score': (
@@ -62,6 +102,7 @@ class ScoreXFeaturePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.title;
     final content = _content[title] ?? (
       icon: Icons.sports_cricket,
       subtitle: 'Cricket information',
@@ -96,26 +137,44 @@ class ScoreXFeaturePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                children: [
-                  const Icon(Icons.cloud_off_outlined, color: _scoreXGold, size: 34),
-                  const SizedBox(height: 10),
-                  const Text('Waiting for live API connection', textAlign: TextAlign.center, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This feature screen is prepared. Real scores, news, player statistics and match information will appear only after a verified data source is connected. No demo scores are displayed.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: .75), height: 1.45),
-                  ),
-                ],
-              ),
+          if (title == 'Match alerts') ...[
+            SwitchListTile(
+              title: const Text('Match alert preference'),
+              subtitle: const Text('Saved on this device. Push delivery requires notification backend setup.'),
+              value: alerts,
+              onChanged: _toggle,
             ),
-          ),
+          ] else if (title == 'Fixtures & Series') ...[
+            FilledButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const FixturesCalendarPage())),
+              icon: const Icon(Icons.calendar_month),
+              label: const Text('Open fixture calendar'),
+            ),
+          ] else if (title == 'Teams & Players') ...[
+            if (loading) const Center(child: CircularProgressIndicator())
+            else if (error != null) ListTile(title: const Text('Teams unavailable'), subtitle: Text(error!), trailing: IconButton(onPressed: _load, icon: const Icon(Icons.refresh)))
+            else ...{
+              for (final m in matches) ...[if (m.teamA != null) m.teamA!, if (m.teamB != null) m.teamB!]
+            }.map((team) => Card(child: ListTile(leading: const Icon(Icons.groups, color: _scoreXGold), title: Text(team), subtitle: const Text('Team seen in verified match feed')))),
+            const Text('Player profiles and squads require an additional licensed data endpoint.'),
+          ] else if (title == 'News & Videos') ...[
+            const Card(child: ListTile(
+              leading: Icon(Icons.newspaper, color: _scoreXGold),
+              title: Text('News and highlights source not connected'),
+              subtitle: Text('Verified publisher feeds and licensed video links are required. No fabricated headlines or videos are shown.'),
+            )),
+          ] else ...[
+            if (loading) const Center(child: CircularProgressIndicator())
+            else if (error != null) ListTile(title: const Text('Match data unavailable'), subtitle: Text(error!), trailing: IconButton(onPressed: _load, icon: const Icon(Icons.refresh)))
+            else ...matches.take(15).map((m) => Card(child: ListTile(
+              title: Text(m.title),
+              subtitle: Text('${m.teamA ?? ''} ${m.teamAScore ?? ''}  •  ${m.teamB ?? ''} ${m.teamBScore ?? ''}\n${m.result ?? ''}'),
+              isThreeLine: true,
+            ))),
+            const Text('Advanced scorecards, commentary and analytics require supported provider endpoints.'),
+          ],
           const SizedBox(height: 18),
-          const Text('PLANNED CAPABILITIES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
+          const Text('ADDITIONAL CAPABILITIES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...content.capabilities.map((item) => Card(
             child: ListTile(
