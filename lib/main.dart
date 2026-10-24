@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/feature_pages.dart';
+import 'screens/cricket_match_centre.dart';
 
 void main() => runApp(const ScoreXApp());
 
@@ -149,7 +150,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   void _openMatchCentre() {
     Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => const ScoreXMatchCentrePage(),
+      builder: (_) => const CricketMatchCentre(),
     ));
   }
 
