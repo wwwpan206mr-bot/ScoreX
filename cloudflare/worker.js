@@ -1,41 +1,34 @@
-/**
- * ScoreX Cricket API proxy for Cloudflare Workers.
- * Add CRICAPI_KEY as a Worker secret; never commit the API key here.
- */
-const API_ORIGIN = 'https://api.cricapi.com/v1';
-
+// ScoreX server-side CricAPI proxy. Set CRICAPI_KEY as a Cloudflare Worker secret.
+const ORIGIN = 'https://api.cricapi.com/v1/currentMatches';
+const reply = (body, status = 200) => new Response(JSON.stringify(body), {
+  status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60' }
+});
 export default {
-  async fetch(request, env) {
-    const origin = request.headers.get('Origin') || '';
-    const headers = {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
-      'Access-Control-Allow-Origin': origin || '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Vary': 'Origin',
-    };
-
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (request.method !== 'GET') return json({ success: false, message: 'GET requests only' }, 405, headers);
-    if (!url.pathname.endsWith('/matches')) return json({ success: false, message: 'Unknown ScoreX API route.' }, 404, headers);
-    if (!env.CRICAPI_KEY) return json({ success: false, message: 'Server API token is not configured.' }, 503, headers);
-
-    const upstream = new URL(API_ORIGIN + '/currentMatches');
-    upstream.searchParams.set('apikey', env.CRICAPI_KEY);
-    upstream.searchParams.set('offset', '0');
-
+    if (request.method !== 'GET') return reply({ error: 'Method not allowed' }, 405);
+    if (url.pathname === '/health') return reply({ status: 'ok', configured: Boolean(env.CRICAPI_KEY) });
+    if (url.pathname !== '/matches') return reply({ error: 'Not found' }, 404);
+    if (!env.CRICAPI_KEY) return reply({ error: 'API secret is not configured' }, 503);
+    const cache = caches.default;
+    const cacheKey = new Request(url.origin + '/matches', { method: 'GET' });
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
     try {
-      const response = await fetch(upstream.toString(), { headers: { Accept: 'application/json' } });
-      const body = await response.text();
-      return new Response(body, { status: response.status, headers });
+      const upstream = new URL(ORIGIN);
+      upstream.searchParams.set('apikey', env.CRICAPI_KEY);
+      upstream.searchParams.set('offset', '0');
+      const response = await fetch(upstream, { headers: { Accept: 'application/json' } });
+      const payload = await response.json();
+      if (!response.ok || payload.status === 'failure') {
+        return reply({ error: 'Cricket data provider request failed', status: response.status }, 502);
+      }
+      const output = reply({ data: Array.isArray(payload.data) ? payload.data : [], updatedAt: new Date().toISOString() });
+      output.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+      ctx.waitUntil(cache.put(cacheKey, output.clone()));
+      return output;
     } catch (_) {
-      return json({ success: false, message: 'Cricket data provider is temporarily unavailable.' }, 502, headers);
+      return reply({ error: 'Cricket data temporarily unavailable' }, 502);
     }
   }
 };
-
-function json(body, status, headers) {
-  return new Response(JSON.stringify(body), { status, headers });
-}
