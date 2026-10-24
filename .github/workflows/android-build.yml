@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.3.1
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -48,7 +48,7 @@ jobs:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: flutter build appbundle --release --dart-define=API_BASE_URL="${API_BASE_URL}"
       - name: Upload Android artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: scorex-android-builds
           path: |
