@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/feature_pages.dart';
-import 'screens/cricket_match_centre.dart';
+import 'screens/live_match_centre.dart';
 import 'screens/fixtures_calendar.dart';
 import 'screens/advanced_analytics.dart';
 import 'screens/legal_pages.dart';
@@ -180,9 +180,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     ));
   }
 
-  void _openMatchCentre() {
+  void _openMatchCentre(String matchId) {
     Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => const CricketMatchCentre(),
+      builder: (_) => LiveMatchCentre(matchId: matchId),
     ));
   }
 
@@ -303,7 +303,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                       await prefs.setStringList(_favoritesKey, _favoriteIds.toList());
                     },
                   ),
-                  onTap: _openMatchCentre,
+                  onTap: () => _openMatchCentre(match.id),
                 )),
               if (_matches.isEmpty)
                 _emptyState(context, icon: Icons.sports_cricket, title: 'No current matches', message: 'The provider has not returned matches at this time.'),
