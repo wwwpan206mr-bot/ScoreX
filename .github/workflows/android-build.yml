@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'lib/**'
+      - 'android/**'
       - 'test/**'
       - 'README.md'
       - 'pubspec.yaml'
