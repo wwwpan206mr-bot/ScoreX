@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/feature_pages.dart';
@@ -274,7 +275,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                 context,
                 icon: Icons.cloud_off_rounded,
                 title: 'Live cricket data is not connected yet',
-                message: 'The ScoreX app interface is being prepared first. No sample or invented scores are shown. In the next phase, we will connect the approved cricket API through the secure backend.',
+                message: 'The ScoreX app interface is being prepared first. No sample or invented scores are shown. In the next phase, we will connect the approved cricket API through the secure backend pipeline.',
                 showAction: true,
               ),
             const SizedBox(height: 18),
@@ -495,7 +496,7 @@ class ScoreXSettingsPage extends StatelessWidget {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Live scores, ball-by-ball commentary and detailed scorecards depend on the cricket data provider and will be connected in the next development phase. ScoreX does not display invented match data.'),
+              child: Text('Live scores, ball-by-ball commentary and detailed scorecards depend on the cricket data provider and will be connected in the next development phase. ScoreX does not display fictional scores or sample statistics before the approved backend is live.'),
             ),
           ),
         ],
@@ -503,7 +504,6 @@ class ScoreXSettingsPage extends StatelessWidget {
     );
   }
 }
-
 
 class ScoreXMatchCentrePage extends StatelessWidget {
   const ScoreXMatchCentrePage({super.key});
