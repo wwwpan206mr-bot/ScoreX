@@ -1,3 +1,4 @@
+import 'services/app_update_service.dart';
 import 'data/cricapi_match_repository.dart';
 import 'models/cricket_match.dart';
 import 'package:flutter/cupertino.dart';
@@ -132,6 +133,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     super.initState();
     _loadPreferences();
     _loadMatches();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) AppUpdateService.check(context, silent: true); });
   }
 
   @override
@@ -613,6 +615,15 @@ class ScoreXSettingsPage extends StatelessWidget {
               onChanged: onNotificationsChanged,
             ),
           ),
+          const SizedBox(height: 20),
+          const Text('APP UPDATES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
+          Card(child: ListTile(
+            leading: const Icon(Icons.system_update_alt, color: scoreXGold),
+            title: const Text('Check for updates'),
+            subtitle: const Text('Check for the latest ScoreX release'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => AppUpdateService.check(context),
+          )),
           const SizedBox(height: 20),
           const Text('HELP, PRIVACY & POLICIES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
