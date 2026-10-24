@@ -205,7 +205,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           ),
         ],
       ),
-      body: _navigationIndex == 1 || _navigationIndex == 3 || _navigationIndex == 4
+      body: _navigationIndex == 1 || _navigationIndex == 3 || _navigationIndex == 4 || _navigationIndex == 5
           ? _navigationSection(context)
           : RefreshIndicator(
         onRefresh: () async { await _loadPreferences(); await _loadMatches(); },
@@ -334,12 +334,54 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket), label: 'Matches'),
           NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Social'),
           NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video), label: 'Videos'),
+          NavigationDestination(icon: Icon(Icons.more_horiz), selectedIcon: Icon(Icons.menu), label: 'More'),
         ],
       ),
     );
   }
 
   Widget _navigationSection(BuildContext context) {
+    if (_navigationIndex == 5) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Text('More', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+          ),
+          Card(child: ListTile(
+            leading: const Icon(Icons.settings_outlined, color: scoreXGold),
+            title: const Text('Settings & Preferences'),
+            subtitle: const Text('Theme, notifications and app options'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openSettings,
+          )),
+          const SizedBox(height: 12),
+          const Text('PRIVACY, SUPPORT & LEGAL',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1.2)),
+          const SizedBox(height: 8),
+          ...[
+            (label: 'Privacy Policy', icon: Icons.privacy_tip_outlined, topic: ScoreXLegalTopic.privacy),
+            (label: 'Support', icon: Icons.support_agent_outlined, topic: ScoreXLegalTopic.support),
+            (label: 'Advertising Disclosure', icon: Icons.ads_click_outlined, topic: ScoreXLegalTopic.advertising),
+            (label: 'Account & Data Deletion', icon: Icons.delete_outline, topic: ScoreXLegalTopic.deletion),
+          ].map((item) => Card(child: ListTile(
+            leading: Icon(item.icon, color: scoreXGold),
+            title: Text(item.label),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => ScoreXLegalPage(topic: item.topic),
+            )),
+          ))),
+          const SizedBox(height: 12),
+          const Card(child: ListTile(
+            leading: Icon(Icons.info_outline, color: scoreXGold),
+            title: Text('About ScoreX'),
+            subtitle: Text('Version 1.0.0 • Cricket live scores'),
+          )),
+        ],
+      );
+    }
     final isSeries = _navigationIndex == 1;
     final isSocial = _navigationIndex == 3;
     final title = isSeries ? 'Cricket Series' : isSocial ? 'Cricket Community' : 'Cricket Videos';
