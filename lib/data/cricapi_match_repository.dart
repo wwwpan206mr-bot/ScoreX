@@ -10,7 +10,7 @@ class CricApiMatchRepository implements MatchRepository {
   @override
   Future<List<CricketMatch>> getMatches({MatchStatus? status}) async {
     if (baseUrl.isEmpty) throw StateError('Worker URL is not configured');
-    final response = await http.get(Uri.parse('$' + '{baseUrl}/matches')).timeout(const Duration(seconds: 15));
+    final response = await http.get(Uri.parse(baseUrl + '/matches')).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) throw StateError('Cricket service unavailable');
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     final data = decoded['data'];
@@ -22,7 +22,7 @@ class CricApiMatchRepository implements MatchRepository {
       String? score(int index) {
         if (scores.length <= index || scores[index] is! Map) return null;
         final s = scores[index] as Map;
-        return '$' + '{s["r"]}/$' + '{s["w"]} ($' + '{s["o"]} ov)';
+        return s['r'].toString() + '/' + s['w'].toString() + ' (' + s['o'].toString() + ' ov)';
       }
       final matchStatus = m['matchEnded'] == true ? MatchStatus.completed
           : m['matchStarted'] == true ? MatchStatus.live : MatchStatus.upcoming;
