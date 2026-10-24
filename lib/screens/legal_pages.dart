@@ -57,7 +57,7 @@ class ScoreXLegalPage extends StatelessWidget {
         const Divider(),
         const Text('Contact', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        SelectableText(scoreXContactEmail),
+        const SelectableText(scoreXContactEmail),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () {
