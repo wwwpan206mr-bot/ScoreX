@@ -186,7 +186,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isFavorites = _navigationIndex == 1;
+    final isFavorites = false;
     final visibleFavorites = _favoriteIds.isNotEmpty;
     return Scaffold(
       appBar: AppBar(
@@ -205,7 +205,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: _navigationIndex == 1 || _navigationIndex == 3 || _navigationIndex == 4
+          ? _navigationSection(context)
+          : RefreshIndicator(
         onRefresh: () async { await _loadPreferences(); await _loadMatches(); },
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
@@ -235,19 +237,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                       ),
               ),
             ),
-            if (_searchController.text.trim().isNotEmpty) ...[
-              const SizedBox(height: 8),
-              const Text(
-                'Search results will appear when verified cricket data is connected.',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
             const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    isFavorites ? 'Favorite matches' : 'Cricket matches',
+                    _navigationIndex == 2 ? 'All cricket matches' : 'Live cricket matches',
                     style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -329,12 +324,52 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         ),
       ),
       bottomNavigationBar: NavigationBar(
+        height: 76,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         selectedIndex: _navigationIndex,
         onDestinationSelected: (value) => setState(() => _navigationIndex = value),
         destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events), label: 'Series'),
           NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket), label: 'Matches'),
-          NavigationDestination(icon: Icon(Icons.star_border), selectedIcon: Icon(Icons.star), label: 'Favorites'),
+          NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Social'),
+          NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video), label: 'Videos'),
         ],
+      ),
+    );
+  }
+
+  Widget _navigationSection(BuildContext context) {
+    final isSeries = _navigationIndex == 1;
+    final isSocial = _navigationIndex == 3;
+    final title = isSeries ? 'Cricket Series' : isSocial ? 'Cricket Community' : 'Cricket Videos';
+    final icon = isSeries ? Icons.emoji_events_outlined
+        : isSocial ? Icons.groups_outlined : Icons.ondemand_video_outlined;
+    final description = isSeries
+        ? 'Explore upcoming fixtures, tournaments and cricket series.'
+        : isSocial
+            ? 'Community features will be available in a future update.'
+            : 'Video highlights will appear when a licensed video source is connected.';
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 58, color: scoreXGold),
+          const SizedBox(height: 16),
+          Text(title, textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
+          Text(description, textAlign: TextAlign.center),
+          const SizedBox(height: 20),
+          if (isSeries)
+            FilledButton.icon(
+              icon: const Icon(Icons.calendar_month_outlined),
+              label: const Text('View fixtures & series'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const FixturesCalendarPage()),
+              ),
+            ),
+        ]),
       ),
     );
   }
