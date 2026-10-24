@@ -1,0 +1,41 @@
+name: Optimized Android Release
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'android/**'
+      - '.github/workflows/optimized-android-release.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Check Android project
+        run: test -f android/app/build.gradle || test -f android/app/build.gradle.kts
+      - name: Build smaller per-architecture release APKs
+        run: flutter build apk --release --split-per-abi --tree-shake-icons
+      - name: Build Play Store App Bundle
+        run: flutter build appbundle --release --tree-shake-icons
+      - name: Show file sizes
+        run: du -h build/app/outputs/flutter-apk/*.apk build/app/outputs/bundle/release/*.aab
+      - name: Upload release APKs and AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorex-optimized-android-release
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
+          if-no-files-found: error
