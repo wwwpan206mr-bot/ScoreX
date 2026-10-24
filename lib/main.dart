@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/feature_pages.dart';
 import 'screens/cricket_match_centre.dart';
 import 'screens/fixtures_calendar.dart';
+import 'screens/advanced_analytics.dart';
 
 void main() => runApp(const ScoreXApp());
 
@@ -390,7 +391,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
             onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => feature.title == 'Fixtures & Series'
                   ? const FixturesCalendarPage()
-                  : ScoreXFeaturePage(title: feature.title),
+                  : feature.title == 'Statistics'
+                      ? const ScoreXAdvancedAnalytics()
+                      : ScoreXFeaturePage(title: feature.title),
             )),
             child: Padding(
               padding: const EdgeInsets.all(14),
