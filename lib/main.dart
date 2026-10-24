@@ -4,6 +4,7 @@ import 'screens/feature_pages.dart';
 import 'screens/cricket_match_centre.dart';
 import 'screens/fixtures_calendar.dart';
 import 'screens/advanced_analytics.dart';
+import 'screens/legal_pages.dart';
 
 void main() => runApp(const ScoreXApp());
 
@@ -457,6 +458,22 @@ class ScoreXSettingsPage extends StatelessWidget {
               onChanged: onNotificationsChanged,
             ),
           ),
+          const SizedBox(height: 20),
+          const Text('HELP, PRIVACY & POLICIES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...[
+            (label: 'Privacy Policy', icon: Icons.privacy_tip_outlined, topic: ScoreXLegalTopic.privacy),
+            (label: 'Support', icon: Icons.support_agent, topic: ScoreXLegalTopic.support),
+            (label: 'Advertising Disclosure', icon: Icons.ads_click_outlined, topic: ScoreXLegalTopic.advertising),
+            (label: 'Account & Data Deletion', icon: Icons.delete_outline, topic: ScoreXLegalTopic.deletion),
+          ].map((item) => Card(child: ListTile(
+            leading: Icon(item.icon),
+            title: Text(item.label),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => ScoreXLegalPage(topic: item.topic),
+            )),
+          ))),
           const SizedBox(height: 20),
           const Text('ABOUT SCOREX', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
