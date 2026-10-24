@@ -55,7 +55,7 @@ class ScoreXAdvancedAnalytics extends StatelessWidget {
               child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
                 Text('${grouped[over]}', style: const TextStyle(fontSize: 10)),
                 Container(
-                  height: 125 * grouped[over]! / maxRuns,
+                  height: 125.0 * grouped[over]! / maxRuns,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFC857),
                     borderRadius: BorderRadius.circular(4),
@@ -74,7 +74,7 @@ class ScoreXAdvancedAnalytics extends StatelessWidget {
             ? 'Not available from the provider'
             : '$partnershipRuns runs • $partnershipBalls balls'),
       )),
-      const Card(child ListTile(
+      const Card(child: ListTile(
         title: Text('Wagon wheel'),
         subtitle: Text('Requires verified shot-direction coordinates; no synthetic shots are plotted.'),
         leading: Icon(Icons.radar),
