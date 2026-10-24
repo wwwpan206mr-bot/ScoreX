@@ -188,8 +188,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isFavorites = false;
-    final visibleFavorites = _favoriteIds.isNotEmpty;
     return Scaffold(
       appBar: AppBar(
         title: const Row(
@@ -257,26 +255,25 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
               ],
             ),
             const SizedBox(height: 12),
-            if (!isFavorites)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ['All', 'Live', 'Upcoming', 'Results']
-                    .map((item) => ChoiceChip(
-                          label: Text(item),
-                          selected: _filter == item,
-                          onSelected: (_) => setState(() => _filter = item),
-                          selectedColor: scoreXGold,
-                          labelStyle: TextStyle(
-                            color: _filter == item ? const Color(0xFF17231C) : null,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          side: BorderSide(
-                            color: _filter == item ? scoreXGold : Theme.of(context).dividerColor,
-                          ),
-                        ))
-                    .toList(),
-              ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ['All', 'Live', 'Upcoming', 'Results']
+                  .map((item) => ChoiceChip(
+                        label: Text(item),
+                        selected: _filter == item,
+                        onSelected: (_) => setState(() => _filter = item),
+                        selectedColor: scoreXGold,
+                        labelStyle: TextStyle(
+                          color: _filter == item ? const Color(0xFF17231C) : null,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        side: BorderSide(
+                          color: _filter == item ? scoreXGold : Theme.of(context).dividerColor,
+                        ),
+                      ))
+                  .toList(),
+            ),
             const SizedBox(height: 14),
             if (_loadingMatches)
               const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
@@ -284,7 +281,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
               _emptyState(context, icon: Icons.cloud_off_outlined, title: 'Live scores unavailable', message: _matchError!)
             else ...[
               for (final match in _matches.where((match) {
-                if (isFavorites && !_favoriteIds.contains(match.id)) return false;
                 if (_filter == 'Live' && match.status != MatchStatus.live) return false;
                 if (_filter == 'Upcoming' && match.status != MatchStatus.upcoming) return false;
                 if (_filter == 'Results' && match.status != MatchStatus.completed) return false;
@@ -653,7 +649,7 @@ class ScoreXSettingsPage extends StatelessWidget {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Live scores, ball-by-ball commentary and detailed scorecards depend on the cricket data provider and will be connected in the next development phase. ScoreX does not display fictional scores or sample statistics before the approved backend is live.'),
+              child: Text('Live scores, ball-by-ball commentary and detailed scorecards depend on the cricket data provider and will be connected in the next development phase. ScoreX does not display fictional match data or inaccurate player statistics.'),
             ),
           ),
         ],
