@@ -40,12 +40,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Match Centre'), findsOneWidget);
-    expect(find.text('Match overview'), findsOneWidget);
-    expect(find.text('Waiting for live API connection'), findsOneWidget);
+    expect(find.text('Ball-by-ball'), findsOneWidget);
+    expect(find.text('No verified commentary available yet'), findsOneWidget);
 
-    await tester.tap(find.text('Commentary'));
+    await tester.tap(find.text('Scorecard'));
     await tester.pumpAndSettle();
-    expect(find.text('Ball-by-ball commentary'), findsOneWidget);
+    expect(find.text('No verified scorecard available yet'), findsOneWidget);
   });
   testWidgets('feature cards open API-ready screens without fake data', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: ScoreXFeaturePage(title: 'Live score')));
