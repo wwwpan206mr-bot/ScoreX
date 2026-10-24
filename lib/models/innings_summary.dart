@@ -20,11 +20,11 @@ class InningsSummary {
       legalBalls > 0 ? runs * 6 / legalBalls : null;
 
   int? get runsNeeded =>
-      target == null ? null : (target! - runs).clamp(0, 999999999);
+      target == null ? null : (target! - runs).clamp(0, 999999999).toInt();
 
   int? get ballsRemaining {
     if (scheduledOvers == null) return null;
-    return (scheduledOvers! * 6 - legalBalls).clamp(0, 999999999);
+    return (scheduledOvers! * 6 - legalBalls).clamp(0, 999999999).toInt();
   }
 
   double? get requiredRunRate {
