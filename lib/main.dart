@@ -49,6 +49,10 @@ class _ScoreXAppState extends State<ScoreXApp> {
       themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         useMaterial3: true,
+        pageTransitionsTheme: const PageTransitionsTheme(builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        }),
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(seedColor: scoreXGreen),
         scaffoldBackgroundColor: const Color(0xFFF4F7F5),
@@ -65,6 +69,10 @@ class _ScoreXAppState extends State<ScoreXApp> {
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
+        pageTransitionsTheme: const PageTransitionsTheme(builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        }),
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(seedColor: scoreXGreen, brightness: brightness),
         scaffoldBackgroundColor: const Color(0xFF071A14),
