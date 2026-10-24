@@ -61,16 +61,10 @@ class _LiveMatchCentreState extends State<LiveMatchCentre> {
         );
       }
       final data = snapshot.data!;
-      final info = data['teamInfo'];
-      final teamNames = info is List
-          ? info.whereType<Map>().map((e) => (e['name'] ?? '').toString())
-              .where((name) => name.isNotEmpty).toList()
-          : <String>[];
       return CricketMatchCentre(
         venue: data['venue']?.toString(),
         toss: data['tossWinner'] == null ? null :
             '${data['tossWinner']} • ${data['tossChoice'] ?? ''}',
-        squad: teamNames,
       );
     },
   );
