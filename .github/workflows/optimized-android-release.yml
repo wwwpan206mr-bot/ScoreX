@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.3.1
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -40,7 +40,7 @@ jobs:
       - name: Show file sizes
         run: du -h build/app/outputs/flutter-apk/*.apk build/app/outputs/bundle/release/*.aab
       - name: Upload release APKs and AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: scorex-optimized-android-release
           path: |
