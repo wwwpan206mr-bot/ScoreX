@@ -1,3 +1,5 @@
+import 'data/cricapi_match_repository.dart';
+import 'models/cricket_match.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -119,12 +121,17 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   bool _loadingPreferences = true;
   bool _notificationsEnabled = false;
   String _filter = 'All';
+  final _matchRepository = const CricApiMatchRepository();
+  List<CricketMatch> _matches = [];
+  String? _matchError;
+  bool _loadingMatches = true;
   int _navigationIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
+    _loadMatches();
   }
 
   @override
@@ -147,6 +154,17 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     setState(() => _notificationsEnabled = value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_notificationsKey, value);
+  }
+
+  Future<void> _loadMatches() async {
+    try {
+      final matches = await _matchRepository.getMatches();
+      if (!mounted) return;
+      setState(() { _matches = matches; _matchError = null; _loadingMatches = false; });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() { _matchError = error.toString(); _loadingMatches = false; });
+    }
   }
 
   void _openSettings() {
@@ -188,7 +206,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadPreferences,
+        onRefresh: () async { await _loadPreferences(); await _loadMatches(); },
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
           children: [
@@ -263,21 +281,40 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                     .toList(),
               ),
             const SizedBox(height: 14),
-            if (isFavorites && !visibleFavorites)
-              _emptyState(
-                context,
-                icon: Icons.star_border_rounded,
-                title: 'No favorites yet',
-                message: 'Tap the star on a match when live cricket data is connected. Your favorites will be saved on this device.',
-              )
-            else
-              _emptyState(
-                context,
-                icon: Icons.cloud_off_rounded,
-                title: 'Live cricket data is not connected yet',
-                message: 'The ScoreX app interface is being prepared first. No sample or invented scores are shown. In the next phase, we will connect the approved cricket API through the secure backend pipeline.',
-                showAction: true,
-              ),
+            if (_loadingMatches)
+              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+            else if (_matchError != null)
+              _emptyState(context, icon: Icons.cloud_off_outlined, title: 'Live scores unavailable', message: _matchError!)
+            else ...[
+              for (final match in _matches.where((match) {
+                if (isFavorites && !_favoriteIds.contains(match.id)) return false;
+                if (_filter == 'Live' && match.status != MatchStatus.live) return false;
+                if (_filter == 'Upcoming' && match.status != MatchStatus.upcoming) return false;
+                if (_filter == 'Results' && match.status != MatchStatus.completed) return false;
+                final q = _searchController.text.toLowerCase().trim();
+                return q.isEmpty || match.title.toLowerCase().contains(q) ||
+                  (match.teamA?.toLowerCase().contains(q) ?? false) ||
+                  (match.teamB?.toLowerCase().contains(q) ?? false);
+              }))
+                Card(child: ListTile(
+                  title: Text(match.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('${match.teamA ?? ""} ${match.teamAScore ?? ""}\n${match.teamB ?? ""} ${match.teamBScore ?? ""}\n${match.result ?? ""}'),
+                  isThreeLine: true,
+                  trailing: IconButton(
+                    icon: Icon(_favoriteIds.contains(match.id) ? Icons.star : Icons.star_border, color: scoreXGold),
+                    onPressed: () async {
+                      setState(() {
+                        if (!_favoriteIds.add(match.id)) _favoriteIds.remove(match.id);
+                      });
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setStringList(_favoritesKey, _favoriteIds.toList());
+                    },
+                  ),
+                  onTap: _openMatchCentre,
+                )),
+              if (_matches.isEmpty)
+                _emptyState(context, icon: Icons.sports_cricket, title: 'No current matches', message: 'The provider has not returned matches at this time.'),
+            ],
             const SizedBox(height: 18),
             _featureGrid(context),
             const SizedBox(height: 20),
