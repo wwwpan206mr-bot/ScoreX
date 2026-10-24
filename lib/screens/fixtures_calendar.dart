@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/cricket_match.dart';
+import '../data/cricapi_match_repository.dart';
 
 /// Filterable schedule that accepts verified fixtures from a repository.
 class FixturesCalendarPage extends StatefulWidget {
@@ -13,10 +14,31 @@ class FixturesCalendarPage extends StatefulWidget {
 class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   MatchStatus? _status;
+  List<CricketMatch> _loaded = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await const CricApiMatchRepository().getMatches();
+      if (!mounted) return;
+      setState(() { _loaded = data; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = widget.matches.where((match) {
+    final filtered = (widget.matches.isNotEmpty ? widget.matches : _loaded).where((match) {
       final date = match.startTime;
       return date != null &&
           DateUtils.isSameDay(date.toLocal(), _selectedDate) &&
@@ -26,7 +48,7 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Fixtures & Series')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
         Card(child: CalendarDatePicker(
           initialDate: _selectedDate,
           firstDate: DateTime(2000),
@@ -41,7 +63,9 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
           _chip('Finished', MatchStatus.completed),
         ]),
         const SizedBox(height: 12),
-        if (filtered.isEmpty)
+        if (_loading) const Center(child: CircularProgressIndicator())
+        else if (_error != null) Card(child: ListTile(title: const Text('Fixtures unavailable'), subtitle: Text(_error!), trailing: IconButton(icon: const Icon(Icons.refresh), onPressed: _load)))
+        else if (filtered.isEmpty)
           const Card(child: Padding(
             padding: EdgeInsets.all(24),
             child: Column(children: [
@@ -49,7 +73,7 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
               SizedBox(height: 12),
               Text('No verified fixtures for this date', textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('Schedules will appear when the cricket provider is connected.',
+              Text('No matches were returned for this date by the current provider. Try another date or refresh.',
                 textAlign: TextAlign.center),
             ]),
           ))
@@ -64,7 +88,7 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
             ].join(' • ')),
             trailing: Text(match.status.name.toUpperCase()),
           ))),
-      ]),
+      ])),
     );
   }
 
