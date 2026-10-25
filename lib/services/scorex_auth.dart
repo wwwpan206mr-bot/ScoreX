@@ -23,6 +23,7 @@ class ScoreXAuth extends ChangeNotifier {
   String? get uid => user?.uid ?? _localUid;
   bool get guest => user?.isAnonymous ?? (_localUid != null);
   bool get signedIn => uid != null;
+  bool get googleAvailable => configured && _webClientId?.isNotEmpty == true;
   String get name => guest ? 'Cricket fan' : user?.displayName ?? 'ScoreX member';
 
   Future<void> initialize() async {
@@ -106,7 +107,7 @@ class ScoreXAuth extends ChangeNotifier {
   }
 
   Future<void> google({bool upgrade = false}) => run(() async {
-    if (!configured) throw StateError('Authentication is not configured');
+    if (!googleAvailable) throw StateError('Google sign-in is not configured');
     final credential = await _googleCredential();
     if (credential == null) return;
     if (upgrade && user?.isAnonymous == true) {

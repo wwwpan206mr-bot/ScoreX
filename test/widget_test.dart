@@ -15,7 +15,8 @@ void main() {
   testWidgets('ScoreX launches with its branding', (tester) async {
     await tester.pumpWidget(const ScoreXApp());
     await tester.pump();
-    expect(find.text('ScoreX'), findsWidgets);
+    expect(find.byType(MaterialApp), findsOneWidget);
+    expect(find.textContaining('ScoreX'), findsWidgets);
   });
 
   testWidgets('feature screen presents its verified-data capabilities', (tester) async {

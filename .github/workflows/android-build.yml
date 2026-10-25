@@ -46,7 +46,9 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, pathlib
-          config = json.loads(os.environ.get('FIREBASE_CONFIG_JSON') or '{}')
+          config_path = pathlib.Path('assets/branding/firebase_config.json')
+          override = os.environ.get('FIREBASE_CONFIG_JSON', '').strip()
+          config = json.loads(override if override else config_path.read_text())
           if config:
               for key in ['apiKey', 'appId', 'messagingSenderId', 'projectId']:
                   assert isinstance(config.get(key), str) and config[key], 'Incomplete Firebase configuration'
