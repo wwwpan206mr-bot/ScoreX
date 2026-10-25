@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'services/app_update_service.dart';
 import 'data/cricapi_match_repository.dart';
 import 'models/cricket_match.dart';
@@ -114,7 +115,10 @@ class ScoreHomePage extends StatefulWidget {
   State<ScoreHomePage> createState() => _ScoreHomePageState();
 }
 
-class _ScoreHomePageState extends State<ScoreHomePage> {
+class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserver {
+  Timer? _refreshTimer;
+  bool _fetchingMatches = false;
+  DateTime? _lastMatchRefresh;
   static const _favoritesKey = 'scorex_favorite_match_ids';
   static const _notificationsKey = 'scorex_notifications_enabled';
 
@@ -132,13 +136,24 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPreferences();
     _loadMatches();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) _loadMatches();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) AppUpdateService.check(context, silent: true); });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadMatches();
+  }
+
+  @override
   void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
   }
@@ -160,13 +175,17 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   }
 
   Future<void> _loadMatches() async {
+    if (_fetchingMatches) return;
+    _fetchingMatches = true;
     try {
       final matches = await _matchRepository.getMatches();
       if (!mounted) return;
-      setState(() { _matches = matches; _matchError = null; _loadingMatches = false; });
+      setState(() { _matches = matches; _matchError = null; _loadingMatches = false; _lastMatchRefresh = DateTime.now(); });
     } catch (error) {
       if (!mounted) return;
       setState(() { _matchError = error.toString(); _loadingMatches = false; });
+    } finally {
+      _fetchingMatches = false;
     }
   }
 
@@ -255,6 +274,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                   ),
               ],
             ),
+            if (_lastMatchRefresh != null)
+              Text('Last checked: ${TimeOfDay.fromDateTime(_lastMatchRefresh!).format(context)} • Auto refresh every 30s', style: const TextStyle(fontSize: 11, color: Colors.grey)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
