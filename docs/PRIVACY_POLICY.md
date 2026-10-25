@@ -4,7 +4,7 @@ Last updated: 26 October 2026
 
 Contact: inf.scorex@gmail.com
 
-ScoreX is a cricket information app. Public match information can be browsed without signing in. The current app may store theme preferences, favorite match identifiers and notification preferences locally on the device.
+ScoreX is a cricket information app. Public match information can be browsed without signing in. The current app may store theme preferences, favorite match identifiers and notification preferences and the last received public match snapshot locally on the device. Settings → Clear saved scores removes the offline snapshot. Cached scores are labelled when updates are delayed.
 
 ## Accounts
 Firebase Authentication supports Google, email/password and anonymous sign-in. It processes account UID and, when provided, email, display name and profile photo. Account deletion is available from the account page; contact support with related questions. No account is required to browse public scores.

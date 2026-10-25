@@ -21,7 +21,7 @@ class ScoreXLegalPage extends StatelessWidget {
     final paragraphs = switch (topic) {
       ScoreXLegalTopic.privacy => const [
         'ScoreX provides public cricket information without requiring an account.',
-        'This app currently stores theme, favorite match IDs and notification preferences locally on your device using app storage.',
+        'This app stores theme, favorite match IDs, notification preferences and the last received public match snapshot locally on your device. Clear saved scores in Settings removes the offline snapshot. Saved scores are labelled when updates are delayed.',
         'Live cricket data is supplied by third-party services. Availability and accuracy depend on those providers.',
         'Firebase Authentication handles email/password, Google and anonymous guest sign-in. Account information can include your UID, email, display name and Google profile photo. Theme and favorites remain on your device.',
         'Advertising uses Google AdMob. It may process device identifiers, IP address, diagnostics and ad interactions to deliver and measure ads and prevent fraud. Consent is checked through Google User Messaging Platform. Required privacy choices are accessible in Settings. Google privacy: https://policies.google.com/privacy',

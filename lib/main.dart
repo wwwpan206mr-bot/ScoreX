@@ -6,7 +6,11 @@ import 'services/app_update_service.dart';
 import 'data/cricapi_match_repository.dart';
 import 'data/match_repository.dart';
 import 'models/cricket_match.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
+import 'theme/scorex_theme.dart';
+import 'services/match_cache.dart';
+import 'widgets/app_version_tile.dart';
+import 'widgets/home_overview.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/feature_pages.dart';
@@ -55,51 +59,13 @@ class _ScoreXAppState extends State<ScoreXApp> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = _darkMode ? Brightness.dark : Brightness.light;
     return MaterialApp(
       title: 'ScoreX',
       debugShowCheckedModeBanner: false,
       themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
-      theme: ThemeData(
-        useMaterial3: true,
-        pageTransitionsTheme: PageTransitionsTheme(builders: <TargetPlatform, PageTransitionsBuilder>{
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        }),
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(seedColor: scoreXGreen),
-        scaffoldBackgroundColor: const Color(0xFFF4F7F5),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: scoreXGreen,
-          foregroundColor: Colors.white,
-          centerTitle: false,
-        ),
-        cardTheme: CardThemeData(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        pageTransitionsTheme: PageTransitionsTheme(builders: <TargetPlatform, PageTransitionsBuilder>{
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        }),
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(seedColor: scoreXGreen, brightness: brightness),
-        scaffoldBackgroundColor: const Color(0xFF071A14),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: scoreXGreen,
-          foregroundColor: Colors.white,
-          centerTitle: false,
-        ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFF102820),
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        ),
-      ),
+      theme: ScoreXTheme.build(Brightness.light),
+      darkTheme: ScoreXTheme.build(Brightness.dark),
+      themeAnimationDuration: const Duration(milliseconds: 220),
       home: ScoreXAuthGate(child: ScoreHomePage(
         darkMode: _darkMode,
         onThemeChanged: _setTheme,
@@ -139,14 +105,14 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   List<CricketMatch> _matches = [];
   String? _matchError;
   bool _loadingMatches = true;
+  bool _showingSavedScores = false;
   int _navigationIndex = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadPreferences();
-    _loadMatches();
+    _bootstrap();
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) _loadMatches();
     });
@@ -182,19 +148,59 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     await prefs.setBool(_notificationsKey, value);
   }
 
+  Future<void> _bootstrap() async {
+    await _loadPreferences();
+    final cached = await MatchCache.read();
+    if (!mounted) return;
+    if (cached != null && _lastMatchRefresh == null) {
+      setState(() {
+        _matches = cached.matches;
+        _lastMatchRefresh = cached.savedAt;
+        _loadingMatches = false;
+        _showingSavedScores = true;
+      });
+    }
+    await _loadMatches();
+  }
+
   Future<void> _loadMatches() async {
-    if (_fetchingMatches) return;
-    _fetchingMatches = true;
+    if (_fetchingMatches || !mounted) return;
+    setState(() => _fetchingMatches = true);
     try {
       final matches = await widget.matchRepository.getMatches();
       if (!mounted) return;
-      setState(() { _matches = matches; _matchError = null; _loadingMatches = false; _lastMatchRefresh = DateTime.now(); });
+      final now = DateTime.now();
+      setState(() {
+        _matches = matches;
+        _matchError = null;
+        _loadingMatches = false;
+        _lastMatchRefresh = now;
+        _showingSavedScores = false;
+      });
+      await MatchCache.save(matches, now);
     } catch (error) {
       if (!mounted) return;
-      setState(() { _matchError = error.toString(); _loadingMatches = false; });
+      setState(() {
+        _matchError = error.toString();
+        _loadingMatches = false;
+        _showingSavedScores = _matches.isNotEmpty;
+      });
     } finally {
-      _fetchingMatches = false;
+      if (mounted) setState(() => _fetchingMatches = false);
     }
+  }
+
+  void _selectNavigation(int value) {
+    if (value == _navigationIndex) return;
+    HapticFeedback.selectionClick();
+    setState(() => _navigationIndex = value);
+  }
+
+  Future<void> _toggleFavorite(String id) async {
+    HapticFeedback.selectionClick();
+    setState(() { if (!_favoriteIds.add(id)) _favoriteIds.remove(id); });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_favoritesKey, _favoriteIds.toList());
   }
 
   void _openSettings() {
@@ -237,185 +243,139 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.asset('assets/branding/scorex_logo.png', width: 38, height: 38, fit: BoxFit.cover)),
-            SizedBox(width: 9),
-            Expanded(child: Text('ScoreX', maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: .4))),
-          ],
-        ),
+        title: Row(children: [
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset(
+            'assets/branding/scorex_logo.png', width: 38, height: 38, fit: BoxFit.cover)),
+          const SizedBox(width: 10),
+          const Expanded(child: Text('ScoreX', maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: -.8))),
+        ]),
         actions: [
           IconButton(tooltip: 'My profile', icon: const Icon(Icons.account_circle_outlined),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXAccountPage()))),
-          IconButton(
-            onPressed: _openSettings,
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-          ),
+          IconButton(onPressed: _openSettings, icon: const Icon(Icons.tune_rounded), tooltip: 'Settings'),
+          const SizedBox(width: 6),
         ],
       ),
-      body: _navigationIndex == 1 || _navigationIndex == 3 || _navigationIndex == 4 || _navigationIndex == 5
-          ? _navigationSection(context)
-          : RefreshIndicator(
-        onRefresh: () async { await _loadPreferences(); await _loadMatches(); },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-          children: [
-            if (_navigationIndex == 0) _heroCard(context),
-            const SizedBox(height: 18),
-            TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'Search cricket matches…',
-                prefixIcon: const Icon(Icons.search_rounded, color: scoreXGold),
-                filled: true,
-                fillColor: Theme.of(context).cardTheme.color,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                        icon: const Icon(Icons.clear),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _navigationIndex == 2 ? (_filter == 'All' ? 'All matches' : '$_filter matches') : 'Match spotlight',
-                    style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                if (_loadingPreferences)
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-              ],
-            ),
-            if (_lastMatchRefresh != null)
-              Text('Last checked: ${TimeOfDay.fromDateTime(_lastMatchRefresh!).format(context)} • Auto refresh every 30s', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-              spacing: 8,
-              children: ['All', 'Live', 'Upcoming', 'Results', 'Following']
-                  .map((item) => ChoiceChip(
-                        label: Text(item),
-                        selected: _filter == item,
-                        showCheckmark: false,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        onSelected: (_) => setState(() => _filter = item),
-                        selectedColor: scoreXGold,
-                        labelStyle: TextStyle(
-                          color: _filter == item ? const Color(0xFF17231C) : null,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        side: BorderSide(
-                          color: _filter == item ? scoreXGold : Theme.of(context).dividerColor,
-                        ),
-                      ))
-                  .toList(),
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (_loadingMatches)
-              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
-            else if (_matchError != null)
-              _emptyState(context, icon: Icons.cloud_off_outlined, title: 'Live scores unavailable', message: _matchError!)
-            else ...[
-              for (final match in _visibleMatches)
-                PremiumMatchCard(
-                  match: match,
-                  favorite: _favoriteIds.contains(match.id),
-                  onFavorite: () async {
-                    setState(() {
-                      if (!_favoriteIds.add(match.id)) _favoriteIds.remove(match.id);
-                    });
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setStringList(_favoritesKey, _favoriteIds.toList());
-                  },
-                  onTap: () => _openMatchCentre(match.id),
-                ),
-              if (_visibleMatches.isEmpty)
-                _filteredEmptyState(context),
-            ],
-            const SizedBox(height: 18),
-            if (_navigationIndex == 0) _featureGrid(context),
-            const SizedBox(height: 20),
-            const Center(
-              child: Text(
-                'SCOREX  •  EVERY RUN. EVERY WICKET.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10, letterSpacing: 1.4, color: Colors.grey),
-              ),
-            ),
+      body: SafeArea(top: false, bottom: false, child: Align(alignment: Alignment.topCenter,
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1040),
+          child: _navigationIndex == 0 || _navigationIndex == 2 ? _matchFeed(context) : _navigationSection(context),
+        ),
+      )),
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(border: Border(top: BorderSide(color: scheme.outlineVariant))),
+        child: NavigationBar(
+          animationDuration: reducedMotion ? Duration.zero : const Duration(milliseconds: 230),
+          labelBehavior: MediaQuery.sizeOf(context).width < 360 || MediaQuery.textScalerOf(context).scale(12) > 18
+              ? NavigationDestinationLabelBehavior.onlyShowSelected : NavigationDestinationLabelBehavior.alwaysShow,
+          selectedIndex: _navigationIndex, onDestinationSelected: _selectNavigation,
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
+            NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events_rounded), label: 'Series'),
+            NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket_rounded), label: 'Matches'),
+            NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups_rounded), label: 'Social'),
+            NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video_rounded), label: 'Videos'),
+            NavigationDestination(icon: Icon(Icons.more_horiz_rounded), selectedIcon: Icon(Icons.apps_rounded), label: 'More'),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF091E19),
-          border: Border(top: BorderSide(color: Color(0x44FFC857), width: 1)),
-          boxShadow: [BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, -4))],
-        ),
-        child: SafeArea(
-          top: false,
-          child: NavigationBarTheme(
-            data: NavigationBarThemeData(
-              backgroundColor: const Color(0xFF091E19),
-              indicatorColor: const Color(0x44FFC857),
-              labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((states) =>
-                TextStyle(
-                  fontSize: 10,
-                  fontWeight: states.contains(WidgetState.selected) ? FontWeight.w900 : FontWeight.w600,
-                  color: states.contains(WidgetState.selected) ? scoreXGold : const Color(0xFFBCE7D7),
-                ),
-              ),
-              iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((states) =>
-                IconThemeData(
-                  size: states.contains(WidgetState.selected) ? 28 : 25,
-                  color: states.contains(WidgetState.selected) ? scoreXGold : const Color(0xFF63E6BE),
-                ),
-              ),
-            ),
-            child: NavigationBar(
-              height: 74,
-              elevation: 0,
-              backgroundColor: const Color(0xFF091E19),
-              animationDuration: const Duration(milliseconds: 330),
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              selectedIndex: _navigationIndex,
-              onDestinationSelected: (value) => setState(() => _navigationIndex = value),
-              destinations: const [
-                NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
-                NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events_rounded), label: 'Series'),
-                NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket_rounded), label: 'Matches'),
-                NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups_rounded), label: 'Social'),
-                NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video_rounded), label: 'Videos'),
-                NavigationDestination(icon: Icon(Icons.more_horiz_rounded), selectedIcon: Icon(Icons.apps_rounded), label: 'More'),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
+  }
+
+  Widget _matchFeed(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final allVisible = _visibleMatches;
+    final shown = _navigationIndex == 0 ? allVisible.take(4).toList() : allVisible;
+    return LayoutBuilder(builder: (context, constraints) {
+      final columns = constraints.maxWidth >= 760 && MediaQuery.textScalerOf(context).scale(14) <= 20 ? 2 : 1;
+      return RefreshIndicator(onRefresh: _loadMatches, child: CustomScrollView(
+        key: PageStorageKey('match-feed-$_navigationIndex'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), sliver: SliverToBoxAdapter(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              if (_navigationIndex == 0) ...[
+                _heroCard(context), const SizedBox(height: 24),
+              ],
+              TextField(
+                controller: _searchController, onChanged: (_) => setState(() {}),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Search teams or matches', prefixIcon: Icon(Icons.search_rounded, color: scheme.primary),
+                  suffixIcon: _searchController.text.isEmpty ? null : IconButton(tooltip: 'Clear search',
+                    onPressed: () { _searchController.clear(); setState(() {}); }, icon: const Icon(Icons.close_rounded)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(children: [
+                Expanded(child: Text(_navigationIndex == 0 ? 'Match spotlight' : 'All matches',
+                  style: Theme.of(context).textTheme.titleLarge)),
+                if (_loadingPreferences) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                else Text('${allVisible.length} matches', style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+              ]),
+              const SizedBox(height: 14),
+              SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+                for (final item in ['All', 'Live', 'Upcoming', 'Results', 'Following'])
+                  Padding(padding: const EdgeInsets.only(right: 8), child: ChoiceChip(
+                    label: Text(item), selected: _filter == item, showCheckmark: false,
+                    labelStyle: TextStyle(fontWeight: FontWeight.w700,
+                      color: _filter == item ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF17231C) : Colors.white)
+                          : scheme.onSurfaceVariant),
+                    onSelected: (_) { HapticFeedback.selectionClick(); setState(() => _filter = item); },
+                  )),
+              ])),
+              const SizedBox(height: 14),
+              MatchFeedNotice(stale: _showingSavedScores, updatedAt: _lastMatchRefresh,
+                refreshing: _fetchingMatches, onRefresh: _loadMatches, error: _matchError),
+              const SizedBox(height: 16),
+              if (_loadingMatches) const MatchLoadingCards(),
+              if (_matchError != null && _matches.isEmpty) ...[
+                _emptyState(context, icon: Icons.wifi_off_rounded, title: 'Live scores unavailable', message: _matchError!),
+                FilledButton.icon(onPressed: _fetchingMatches ? null : _loadMatches,
+                  icon: const Icon(Icons.refresh), label: const Text('Try again')),
+              ],
+              if (!_loadingMatches && allVisible.isEmpty && (_matchError == null || _matches.isNotEmpty)) _filteredEmptyState(context),
+            ]),
+          )),
+          if (!_loadingMatches && shown.isNotEmpty)
+            SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverList.builder(
+              itemCount: (shown.length / columns).ceil(),
+              itemBuilder: (context, row) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                for (var column = 0; column < columns; column++) ...[
+                  if (column > 0) const SizedBox(width: 14),
+                  Expanded(child: row * columns + column >= shown.length ? const SizedBox.shrink() :
+                    PremiumMatchCard(
+                      key: ValueKey(shown[row * columns + column].id),
+                      match: shown[row * columns + column],
+                      favorite: _favoriteIds.contains(shown[row * columns + column].id),
+                      stale: _showingSavedScores,
+                      onFavorite: () => _toggleFavorite(shown[row * columns + column].id),
+                      onTap: () => _openMatchCentre(shown[row * columns + column].id),
+                    )),
+                ],
+              ]),
+            )),
+          SliverPadding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 28), sliver: SliverToBoxAdapter(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              if (_navigationIndex == 0) ...[
+                TextButton.icon(onPressed: () => _selectNavigation(2),
+                  label: const Text('Explore all matches'), icon: const Icon(Icons.arrow_forward_rounded, size: 18)),
+                const SizedBox(height: 22),
+                Text('Explore ScoreX', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 14), _featureGrid(context),
+              ],
+              const SizedBox(height: 24),
+              Text('SCOREX  /  EVERY RUN. EVERY WICKET.', textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 10, letterSpacing: 1.1, color: scheme.onSurfaceVariant)),
+            ]),
+          )),
+        ],
+      ));
+    });
   }
 
   Widget _filteredEmptyState(BuildContext context) {
@@ -482,11 +442,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             )),
           ))),
           const SizedBox(height: 12),
-          const Card(child: ListTile(
-            leading: Icon(Icons.info_outline, color: scoreXGold),
-            title: Text('About ScoreX'),
-            subtitle: Text('Version 1.0.1 • Cricket live scores'),
-          )),
+          const AdsPrivacyTile(),
+          const AppVersionTile(),
         ],
       );
     }
@@ -524,50 +481,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     );
   }
 
-  Widget _heroCard(BuildContext context) {
-    final live = _matches.where((m) => m.status == MatchStatus.live).length;
-    final upcoming = _matches.where((m) => m.status == MatchStatus.upcoming).length;
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B6049), Color(0xFF0A2B23)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight),
-        border: Border.all(color: const Color(0x66FFC857)),
-        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 24, offset: Offset(0, 8))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Row(children: [
-          Icon(Icons.sports_cricket_rounded, color: scoreXGold, size: 18),
-          SizedBox(width: 8),
-          Expanded(child: Text('THE CRICKET EDIT', style: TextStyle(
-            color: scoreXGold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800))),
-        ]),
-        const SizedBox(height: 16),
-        const Text('Your game.\nCloser than ever.', style: TextStyle(
-          fontSize: 28, height: 1.12, fontWeight: FontWeight.w900, color: Colors.white)),
-        const SizedBox(height: 10),
-        const Text('Scores, fixtures & every match that matters.',
-          style: TextStyle(color: Color(0xFFCCE5D9), fontSize: 12, height: 1.5)),
-        const SizedBox(height: 20),
-        Wrap(spacing: 10, runSpacing: 8, children: [
-          _overviewPill(Icons.bolt_rounded, _loadingMatches || _matchError != null ? 'Live • —' : '$live live'),
-          _overviewPill(Icons.event_outlined, _loadingMatches || _matchError != null ? 'Upcoming • —' : '$upcoming upcoming'),
-        ]),
-      ]),
-    );
-  }
-
-  Widget _overviewPill(IconData icon, String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-    decoration: BoxDecoration(
-      color: const Color(0x22FFFFFF), borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0x22FFFFFF))),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, color: scoreXGold, size: 15), const SizedBox(width: 6),
-      Text(text, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-    ]),
+  Widget _heroCard(BuildContext context) => HomeOverview(
+    live: _matches.where((m) => m.status == MatchStatus.live).length,
+    upcoming: _matches.where((m) => m.status == MatchStatus.upcoming).length,
+    following: _favoriteIds.length, loading: _loadingMatches, stale: _showingSavedScores,
+    onFilter: (filter) => setState(() { _filter = filter; _navigationIndex = 2; _searchController.clear(); }),
   );
 
   Widget _emptyState(
@@ -678,7 +596,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   }
 }
 
-class ScoreXSettingsPage extends StatelessWidget {
+class ScoreXSettingsPage extends StatefulWidget {
   const ScoreXSettingsPage({
     super.key,
     required this.darkMode,
@@ -691,6 +609,24 @@ class ScoreXSettingsPage extends StatelessWidget {
   final bool notificationsEnabled;
   final ValueChanged<bool> onThemeChanged;
   final ValueChanged<bool> onNotificationsChanged;
+
+  @override
+  State<ScoreXSettingsPage> createState() => _ScoreXSettingsPageState();
+}
+
+class _ScoreXSettingsPageState extends State<ScoreXSettingsPage> {
+  late bool darkMode = widget.darkMode;
+  late bool notificationsEnabled = widget.notificationsEnabled;
+
+  void onThemeChanged(bool value) {
+    setState(() => darkMode = value);
+    widget.onThemeChanged(value);
+  }
+
+  void onNotificationsChanged(bool value) {
+    setState(() => notificationsEnabled = value);
+    widget.onNotificationsChanged(value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -730,7 +666,15 @@ class ScoreXSettingsPage extends StatelessWidget {
           )),
           const SizedBox(height: 20),
           const AdsPrivacyTile(),
-          const Text('HELP, PRIVACY & POLICIES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
+          Card(child: ListTile(
+            leading: const Icon(Icons.cleaning_services_outlined), title: const Text('Clear saved scores'),
+            subtitle: const Text('Remove the offline match snapshot from this device'),
+            onTap: () async {
+              await MatchCache.clear();
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved scores cleared')));
+            },
+          )),
+          const Text('HELP, PRIVACY & POLICIES' , style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...[
             (label: 'Privacy Policy', icon: Icons.privacy_tip_outlined, topic: ScoreXLegalTopic.privacy),
@@ -748,17 +692,11 @@ class ScoreXSettingsPage extends StatelessWidget {
           const SizedBox(height: 20),
           const Text('ABOUT SCOREX', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Card(
-            child: ListTile(
-              leading: Icon(Icons.sports_cricket, color: scoreXGold),
-              title: Text('ScoreX Cricket'),
-              subtitle: Text('Version 1.0.1 • Android-first'),
-            ),
-          ),
+          const AppVersionTile(),
           const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Live scores, ball-by-ball commentary and detailed scorecards depend on the cricket data provider and will be connected in the next development phase. ScoreX does not display fictional match data or inaccurate player statistics.'),
+              child: Text('Scores and delivery coverage depend on the cricket provider. Saved scores show the last received update and are labelled when refresh is delayed. Swipe down to refresh.'),
             ),
           ),
         ],

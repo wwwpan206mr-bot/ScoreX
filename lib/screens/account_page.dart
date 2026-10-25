@@ -84,7 +84,9 @@ class _ScoreXAccountPageState extends State<ScoreXAccountPage> {
     final member = auth.user != null && !auth.guest;
     return Scaffold(
       appBar: AppBar(title: const Text('ScoreX • My profile')),
-      body: ListView(padding: const EdgeInsets.all(24), children: [
+      body: Align(alignment: Alignment.topCenter, child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540),
+        child: ListView(padding: const EdgeInsets.all(24), children: [
         Center(child: _avatar()),
         const SizedBox(height: 14),
         Text(auth.signedIn ? auth.name : 'Welcome to ScoreX',
@@ -123,21 +125,21 @@ class _ScoreXAccountPageState extends State<ScoreXAccountPage> {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           if (!auth.configured) const Padding(padding: EdgeInsets.symmetric(vertical: 10),
             child: Text('Online accounts are not available in this build yet. Continue as a guest to watch scores.')),
-          Form(key: _form, child: Column(children: [
+          AutofillGroup(child: Form(key: _form, child: Column(spacing: 14, children: [
             if (_register) TextFormField(controller: _name, autofillHints: const [AutofillHints.name],
-              decoration: const InputDecoration(labelText: 'Display name'),
+              decoration: const InputDecoration(labelText: 'Display name', prefixIcon: Icon(Icons.person_outline)),
               validator: (value) => value == null || value.trim().isEmpty ? 'Enter your name' : null),
             TextFormField(controller: _email, keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email address'),
+              decoration: const InputDecoration(labelText: 'Email address', prefixIcon: Icon(Icons.alternate_email_rounded)),
               validator: (value) => value == null || !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim()) ? 'Enter a valid email' : null),
             TextFormField(controller: _password, obscureText: !_showPassword,
               autofillHints: [_register ? AutofillHints.newPassword : AutofillHints.password],
-              decoration: InputDecoration(labelText: 'Password', suffixIcon: IconButton(
+              decoration: InputDecoration(labelText: 'Password', prefixIcon: const Icon(Icons.lock_outline_rounded), suffixIcon: IconButton(
                 onPressed: () => setState(() => _showPassword = !_showPassword),
                 icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility))),
               validator: (value) => value == null || value.length < 6 ? 'Use at least 6 characters' : null),
-          ])),
+          ]))),
           const SizedBox(height: 20),
           FilledButton(onPressed: !auth.configured || auth.busy ? null : _submit,
             child: Text(_register ? 'Create account' : 'Sign in')),
@@ -158,7 +160,7 @@ class _ScoreXAccountPageState extends State<ScoreXAccountPage> {
           TextButton(onPressed: auth.busy ? null : _delete,
             child: Text(auth.guest ? 'Delete guest account' : 'Delete account')),
         ],
-      ]),
+      ]))),
     );
   });
 }

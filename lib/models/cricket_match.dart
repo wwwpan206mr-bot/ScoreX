@@ -31,6 +31,13 @@ class CricketMatch {
   final String? overs;
   final String? result;
 
+  Map<String, dynamic> toJson() => {
+    'id': id, 'title': title, 'status': status.name, 'series': series,
+    'venue': venue, 'startTime': startTime?.toUtc().toIso8601String(),
+    'teamA': teamA, 'teamB': teamB, 'teamAScore': teamAScore,
+    'teamBScore': teamBScore, 'overs': overs, 'result': result,
+  };
+
   factory CricketMatch.fromJson(Map<String, dynamic> json) {
     MatchStatus parseStatus(Object? value) {
       switch (value?.toString().toLowerCase()) {

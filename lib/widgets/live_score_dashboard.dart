@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'scorex_ads.dart';
+import '../theme/scorex_theme.dart';
 import '../models/ball_event.dart';
 import '../models/innings_summary.dart';
 import '../models/win_estimate.dart';
@@ -29,14 +30,14 @@ class LiveScoreDashboard extends StatelessWidget {
   static const gold = Color(0xFFFFC857);
   static const mint = Color(0xFF63E6BE);
 
-  Widget _card(Widget child) => Card(child: Padding(padding: const EdgeInsets.all(16), child: child));
+  Widget _card(Widget child) => Card(child: Padding(padding: const EdgeInsets.all(20), child: child));
 
   @override
   Widget build(BuildContext context) {
     final data = innings;
     final recent = deliveries.length > 12 ? deliveries.sublist(deliveries.length - 12) : deliveries;
     final prediction = stale || completed ? null : estimate;
-    return ListView(padding: const EdgeInsets.all(12), children: [
+    return ListView(key: const PageStorageKey('live-dashboard'), padding: const EdgeInsets.all(12), children: [
       if (stale) _card(const Row(children: [
         Icon(Icons.schedule, color: gold), SizedBox(width: 10),
         Expanded(child: Text('Updates delayed • showing the last received deliveries')),
@@ -48,7 +49,7 @@ class LiveScoreDashboard extends StatelessWidget {
       if (data != null) _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(battingTeam ?? 'Current innings', style: const TextStyle(color: mint, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        Text('${data.runs}/${data.wickets}', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900)),
+        Text('${data.runs}/${data.wickets}', style: ScoreXTheme.scoreStyle.copyWith(fontSize: 44)),
         Text('${data.overs} overs', style: const TextStyle(color: Colors.grey)),
         const SizedBox(height: 14),
         Wrap(spacing: 24, runSpacing: 12, children: [
