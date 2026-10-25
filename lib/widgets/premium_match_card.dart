@@ -30,6 +30,10 @@ class PremiumMatchCard extends StatelessWidget {
     final live = match.status == MatchStatus.live;
     final result = match.result?.trim() ?? '';
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: live ? gold.withValues(alpha: .5) : (dark ? const Color(0xFF26483B) : const Color(0xFFDCE8E1)))),
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -92,14 +96,21 @@ class PremiumMatchCard extends StatelessWidget {
           color: gold.withValues(alpha: .12),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(Icons.sports_cricket_rounded, color: gold, size: 18),
+        child: Text(name.split(' ').where((word) => word.isNotEmpty).take(3).map((word) => word[0]).join().toUpperCase(),
+          style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? gold : const Color(0xFF0B3D2E),
+            fontSize: 11, fontWeight: FontWeight.w900)),
       ),
       const SizedBox(width: 10),
       Expanded(child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
       const SizedBox(width: 8),
-      Text(score ?? '—', style: const TextStyle(fontSize: 14,
-        fontWeight: FontWeight.w900)),
+      Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Text((score ?? '—').split(' (').first, textAlign: TextAlign.right,
+          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900, letterSpacing: -.6)),
+        if (score != null && score.contains(' ('))
+          Text('(${score.split(' (').skip(1).join(' (')}', textAlign: TextAlign.right,
+            style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodySmall?.color)),
+      ])),
     ]);
   }
 }
