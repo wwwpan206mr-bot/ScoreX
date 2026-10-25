@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:scorex/screens/account_page.dart';
 import 'package:scorex/services/scorex_auth.dart';
@@ -8,8 +11,16 @@ import 'package:scorex/main.dart';
 import 'package:scorex/screens/feature_pages.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMessageHandler('flutter/assets', (message) async {
+      final key = const StringCodec().decodeMessage(message);
+      if (key == 'assets/branding/firebase_config.json') {
+        return ByteData.sublistView(Uint8List.fromList(utf8.encode('{}')));
+      }
+      return null;
+    });
   });
 
   testWidgets('ScoreX launches with its branding', (tester) async {
