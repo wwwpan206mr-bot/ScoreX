@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'live_match_centre.dart';
 import '../models/cricket_match.dart';
 import '../data/cricapi_match_repository.dart';
 
@@ -21,7 +22,11 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.matches.isNotEmpty) {
+      _loading = false;
+    } else {
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -48,7 +53,7 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Fixtures & Series')),
-      body: RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
+      body: RefreshIndicator(onRefresh: _load, child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
         Card(child: CalendarDatePicker(
           initialDate: _selectedDate,
           firstDate: DateTime(2000),
@@ -79,6 +84,7 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
           ))
         else
           ...filtered.map((match) => Card(child: ListTile(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => LiveMatchCentre(matchId: match.id))),
             leading: const Icon(Icons.sports_cricket),
             title: Text(match.title),
             subtitle: Text([
