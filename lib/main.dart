@@ -497,7 +497,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
             if (showAction) ...[
               const SizedBox(height: 15),
               OutlinedButton.icon(
-                onPressed: _openMatchCentre,
+                onPressed: () {
+                  final matchId = _matches.isNotEmpty ? _matches.first.id : null;
+                  if (matchId != null && matchId.isNotEmpty) _openMatchCentre(matchId);
+                },
                 icon: const Icon(Icons.dashboard_customize_outlined),
                 label: const Text('Preview match centre'),
               ),
