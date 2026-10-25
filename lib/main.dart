@@ -622,11 +622,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: features.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        childAspectRatio: 1.28,
+        mainAxisExtent: 180 * MediaQuery.textScalerOf(context).scale(14) / 14,
       ),
       itemBuilder: (context, index) {
         final feature = features[index];
@@ -658,9 +658,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                 children: [
                   Icon(feature.icon, color: scoreXGold, size: 25),
                   const SizedBox(height: 9),
-                  Text(feature.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Text(feature.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 4),
-                  Text(feature.subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  Text(feature.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ],
               ),
             ),
