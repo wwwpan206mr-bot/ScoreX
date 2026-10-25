@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'services/ads_service.dart';
+import 'widgets/scorex_ads.dart';
 import 'screens/account_page.dart';
 import 'services/app_update_service.dart';
 import 'data/cricapi_match_repository.dart';
@@ -34,6 +36,9 @@ class _ScoreXAppState extends State<ScoreXApp> {
   void initState() {
     super.initState();
     _loadThemePreference();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(AdsService.instance.initialize());
+    });
   }
 
   Future<void> _loadThemePreference() async {
@@ -724,6 +729,7 @@ class ScoreXSettingsPage extends StatelessWidget {
             onTap: () => AppUpdateService.check(context),
           )),
           const SizedBox(height: 20),
+          const AdsPrivacyTile(),
           const Text('HELP, PRIVACY & POLICIES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...[

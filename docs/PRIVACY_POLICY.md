@@ -1,19 +1,19 @@
 # ScoreX Privacy Policy
 
-Last updated: 24 October 2026
+Last updated: 26 October 2026
 
 Contact: inf.scorex@gmail.com
 
 ScoreX is a cricket information app. Public match information can be browsed without signing in. The current app may store theme preferences, favorite match identifiers and notification preferences locally on the device.
 
 ## Accounts
-If account sign-in is introduced, this policy will be updated to identify the authentication provider, personal data collected and retention rules before the feature is enabled. No account is required to browse public scores.
+Firebase Authentication supports Google, email/password and anonymous sign-in. It processes account UID and, when provided, email, display name and profile photo. Account deletion is available from the account page; contact support with related questions. No account is required to browse public scores.
 
 ## Cricket data
 Match information may be supplied by third-party cricket data providers. Availability and accuracy depend on those providers.
 
 ## Advertising and analytics
-If advertising or analytics SDKs are introduced, this policy and the app's consent controls will be updated before deployment to describe the providers, identifiers, purposes and user choices. Personalized advertising must respect applicable consent requirements.
+ScoreX integrates Google Mobile Ads (AdMob) for banner and native advertisements. Development builds use test ads until publisher IDs are configured. Google may process device/advertising identifiers, IP address, diagnostics and interactions for ad delivery, measurement and fraud prevention. Google User Messaging Platform checks consent before ad requests. Where required, Ad privacy choices in Settings and legal pages allows users to review consent. See https://policies.google.com/privacy and https://policies.google.com/technologies/ads. ScoreX does not operate its own advertising tracking backend.
 
 ## Data choices
 Users can clear locally stored app data through their device settings. For privacy inquiries and future account deletion requests, contact inf.scorex@gmail.com. Account deletion functionality will be provided before account registration is enabled.

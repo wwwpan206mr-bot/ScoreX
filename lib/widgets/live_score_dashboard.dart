@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'scorex_ads.dart';
 import '../models/ball_event.dart';
 import '../models/innings_summary.dart';
 import '../models/win_estimate.dart';
@@ -123,6 +124,7 @@ class LiveScoreDashboard extends StatelessWidget {
         const ['Batter', 'R', 'B', '4s', '6s', 'SR']),
       _players('Bowlers', bowling, const ['name', 'wickets', 'runs', 'overs', 'economy'],
         const ['Bowler', 'W', 'R', 'Overs', 'Econ']),
+      const ScoreXAdSlot(format: ScoreXAdFormat.native),
       if (venue != null) Padding(padding: const EdgeInsets.all(8), child: Text(venue!,
         style: const TextStyle(color: Colors.grey, fontSize: 12))),
     ]);

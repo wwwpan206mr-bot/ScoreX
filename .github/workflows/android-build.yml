@@ -54,6 +54,13 @@ jobs:
                   assert isinstance(config.get(key), str) and config[key], 'Incomplete Firebase configuration'
           pathlib.Path('assets/branding/firebase_config.json').write_text(json.dumps(config))
           PY
+      - name: Configure AdMob placements
+        env:
+          ADMOB_TEST_MODE: ${{ vars.ADMOB_TEST_MODE }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+          ADMOB_NATIVE_ID: ${{ vars.ADMOB_NATIVE_ID }}
+        run: python3 scripts/configure_ads.py
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze Dart code

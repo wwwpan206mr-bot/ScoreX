@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/scorex_ads.dart';
 import '../models/ball_event.dart';
 import '../models/innings_summary.dart';
 import '../models/win_estimate.dart';
@@ -73,6 +74,8 @@ class CricketMatchCentre extends StatelessWidget {
             ],
           ),
         ),
+        bottomNavigationBar: const SafeArea(
+          top: false, child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: ScoreXAdSlot())),
         body: Column(children: [
           _scoreHeader(),
           Expanded(child: TabBarView(children: [

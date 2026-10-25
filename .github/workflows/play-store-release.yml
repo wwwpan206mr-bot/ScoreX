@@ -58,6 +58,13 @@ jobs:
           test -n "$ANDROID_KEY_PASSWORD"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$SCOREX_KEYSTORE_PATH"
           python3 scripts/configure_play_signing.py
+      - name: Configure AdMob placements
+        env:
+          ADMOB_TEST_MODE: ${{ vars.ADMOB_TEST_MODE }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+          ADMOB_NATIVE_ID: ${{ vars.ADMOB_NATIVE_ID }}
+        run: python3 scripts/configure_ads.py
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze and test
