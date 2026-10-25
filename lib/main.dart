@@ -9,6 +9,7 @@ import 'screens/live_match_centre.dart';
 import 'screens/fixtures_calendar.dart';
 import 'screens/advanced_analytics.dart';
 import 'screens/legal_pages.dart';
+import 'widgets/premium_match_card.dart';
 
 void main() => runApp(const ScoreXApp());
 
@@ -289,22 +290,18 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                   (match.teamA?.toLowerCase().contains(q) ?? false) ||
                   (match.teamB?.toLowerCase().contains(q) ?? false);
               }))
-                Card(child: ListTile(
-                  title: Text(match.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${match.teamA ?? ""} ${match.teamAScore ?? ""}\n${match.teamB ?? ""} ${match.teamBScore ?? ""}\n${match.result ?? ""}'),
-                  isThreeLine: true,
-                  trailing: IconButton(
-                    icon: Icon(_favoriteIds.contains(match.id) ? Icons.star : Icons.star_border, color: scoreXGold),
-                    onPressed: () async {
-                      setState(() {
-                        if (!_favoriteIds.add(match.id)) _favoriteIds.remove(match.id);
-                      });
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setStringList(_favoritesKey, _favoriteIds.toList());
-                    },
-                  ),
+                PremiumMatchCard(
+                  match: match,
+                  favorite: _favoriteIds.contains(match.id),
+                  onFavorite: () async {
+                    setState(() {
+                      if (!_favoriteIds.add(match.id)) _favoriteIds.remove(match.id);
+                    });
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setStringList(_favoritesKey, _favoriteIds.toList());
+                  },
                   onTap: () => _openMatchCentre(match.id),
-                )),
+                ),
               if (_matches.isEmpty)
                 _emptyState(context, icon: Icons.sports_cricket, title: 'No current matches', message: 'The provider has not returned matches at this time.'),
             ],
