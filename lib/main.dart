@@ -140,7 +140,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     _loadPreferences();
     _loadMatches();
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) _loadMatches();
+      if (mounted && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) _loadMatches();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) AppUpdateService.check(context, silent: true); });
   }
@@ -206,6 +206,25 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     ));
   }
 
+  List<CricketMatch> get _visibleMatches {
+    final query = _searchController.text.trim().toLowerCase();
+    final matches = _matches.where((m) {
+      if (_filter == 'Live' && m.status != MatchStatus.live) return false;
+      if (_filter == 'Upcoming' && m.status != MatchStatus.upcoming) return false;
+      if (_filter == 'Results' && m.status != MatchStatus.completed) return false;
+      if (_filter == 'Following' && !_favoriteIds.contains(m.id)) return false;
+      return query.isEmpty || [m.title, m.teamA ?? '', m.teamB ?? '', m.series ?? '']
+        .any((value) => value.toLowerCase().contains(query));
+    }).toList();
+    int rank(CricketMatch m) => m.status == MatchStatus.live ? 0 : m.status == MatchStatus.upcoming ? 1 : 2;
+    matches.sort((a, b) {
+      final status = rank(a).compareTo(rank(b));
+      if (status != 0) return status;
+      return (b.startTime ?? DateTime(2000)).compareTo(a.startTime ?? DateTime(2000));
+    });
+    return matches;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -233,7 +252,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
           children: [
-            _heroCard(context),
+            if (_navigationIndex == 0) _heroCard(context),
             const SizedBox(height: 18),
             TextField(
               controller: _searchController,
@@ -281,7 +300,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: ['All', 'Live', 'Upcoming', 'Results']
+              children: ['All', 'Live', 'Upcoming', 'Results', 'Following']
                   .map((item) => ChoiceChip(
                         label: Text(item),
                         selected: _filter == item,
@@ -306,15 +325,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             else if (_matchError != null)
               _emptyState(context, icon: Icons.cloud_off_outlined, title: 'Live scores unavailable', message: _matchError!)
             else ...[
-              for (final match in _matches.where((match) {
-                if (_filter == 'Live' && match.status != MatchStatus.live) return false;
-                if (_filter == 'Upcoming' && match.status != MatchStatus.upcoming) return false;
-                if (_filter == 'Results' && match.status != MatchStatus.completed) return false;
-                final q = _searchController.text.toLowerCase().trim();
-                return q.isEmpty || match.title.toLowerCase().contains(q) ||
-                  (match.teamA?.toLowerCase().contains(q) ?? false) ||
-                  (match.teamB?.toLowerCase().contains(q) ?? false);
-              }))
+              for (final match in _visibleMatches)
                 PremiumMatchCard(
                   match: match,
                   favorite: _favoriteIds.contains(match.id),
@@ -327,8 +338,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                   },
                   onTap: () => _openMatchCentre(match.id),
                 ),
-              if (_matches.isEmpty)
-                _emptyState(context, icon: Icons.sports_cricket, title: 'No current matches', message: 'The provider has not returned matches at this time.'),
+              if (_visibleMatches.isEmpty)
+                _emptyState(context, icon: Icons.sports_cricket, title: 'No matches found', message: 'Try another filter or search. Star a match to add it to Following.'),
             ],
             const SizedBox(height: 18),
             _featureGrid(context),
@@ -583,7 +594,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => feature.title == 'Fixtures & Series'
+              builder: (_) => ['Live score', 'Commentary', 'Scorecard'].contains(feature.title) && _matches.isNotEmpty
+                  ? LiveMatchCentre(matchId: _visibleMatches.isNotEmpty ? _visibleMatches.first.id : _matches.first.id)
+                  : feature.title == 'Fixtures & Series'
                   ? const FixturesCalendarPage()
                   : feature.title == 'Statistics'
                       ? const ScoreXAdvancedAnalytics()
