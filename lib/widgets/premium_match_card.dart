@@ -42,8 +42,10 @@ class PremiumMatchCard extends StatelessWidget {
           if (showFavorite) IconButton(
             tooltip: favorite ? 'Remove favorite' : 'Add favorite', onPressed: onFavorite,
             isSelected: favorite,
-            icon: Icon(favorite ? Icons.star_rounded : Icons.star_outline_rounded,
-              color: favorite ? scheme.secondary : scheme.onSurfaceVariant, size: 22),
+            icon: AnimatedSwitcher(
+              duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180),
+              child: Icon(favorite ? Icons.star_rounded : Icons.star_outline_rounded, key: ValueKey(favorite),
+                color: favorite ? scheme.secondary : scheme.onSurfaceVariant, size: 22)),
           ) else const SizedBox(height: 44, width: 8),
         ])),
         Padding(padding: const EdgeInsets.fromLTRB(18, 2, 18, 18), child: Column(

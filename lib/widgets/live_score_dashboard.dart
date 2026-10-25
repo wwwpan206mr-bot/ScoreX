@@ -27,18 +27,17 @@ class LiveScoreDashboard extends StatelessWidget {
   final String? status;
   final String? venue;
 
-  static const gold = Color(0xFFFFC857);
-  static const mint = Color(0xFF63E6BE);
-
   Widget _card(Widget child) => Card(child: Padding(padding: const EdgeInsets.all(20), child: child));
 
   @override
   Widget build(BuildContext context) {
+    final gold = Theme.of(context).colorScheme.secondary;
+    final mint = Theme.of(context).colorScheme.primary;
     final data = innings;
     final recent = deliveries.length > 12 ? deliveries.sublist(deliveries.length - 12) : deliveries;
     final prediction = stale || completed ? null : estimate;
     return ListView(key: const PageStorageKey('live-dashboard'), padding: const EdgeInsets.all(12), children: [
-      if (stale) _card(const Row(children: [
+      if (stale) _card(Row(children: [
         Icon(Icons.schedule, color: gold), SizedBox(width: 10),
         Expanded(child: Text('Updates delayed • showing the last received deliveries')),
       ])),
@@ -47,7 +46,7 @@ class LiveScoreDashboard extends StatelessWidget {
       const SizedBox(height: 10),
       if (completed && status != null) _card(Text(status!, style: const TextStyle(fontWeight: FontWeight.bold))),
       if (data != null) _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(battingTeam ?? 'Current innings', style: const TextStyle(color: mint, fontWeight: FontWeight.bold)),
+        Text(battingTeam ?? 'Current innings', style: TextStyle(color: mint, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Text('${data.runs}/${data.wickets}', style: ScoreXTheme.scoreStyle.copyWith(fontSize: 44)),
         Text('${data.overs} overs', style: const TextStyle(color: Colors.grey)),
@@ -60,7 +59,7 @@ class LiveScoreDashboard extends StatelessWidget {
         if (!completed && data.runsNeeded != null && data.ballsRemaining != null) ...[
           const SizedBox(height: 12),
           Text('${data.runsNeeded} runs needed in ${data.ballsRemaining} balls',
-            style: const TextStyle(color: gold, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: gold, fontWeight: FontWeight.bold)),
         ],
         if (!completed && data.target == null && data.legalBalls > 0 &&
             data.wickets < 10 && data.scheduledOvers != null) ...[
@@ -82,7 +81,7 @@ class LiveScoreDashboard extends StatelessWidget {
             if (index == 0 || recent[index].over != recent[index - 1].over)
               Padding(padding: const EdgeInsets.only(right: 8),
                 child: Text('Over ${recent[index].over + 1}', style: const TextStyle(fontSize: 11))),
-            Padding(padding: const EdgeInsets.only(right: 6), child: _ball(recent[index])),
+            Padding(padding: const EdgeInsets.only(right: 6), child: _ball(context, recent[index])),
           ],
         ])),
         if (source != null && updatedAt != null) ...[
@@ -92,7 +91,7 @@ class LiveScoreDashboard extends StatelessWidget {
         ],
       ])),
       _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Row(children: [Icon(Icons.insights, size: 18, color: gold), SizedBox(width: 8),
+        Row(children: [Icon(Icons.insights, size: 18, color: gold), SizedBox(width: 8),
           Expanded(child: Text('Estimated win probability', style: TextStyle(fontWeight: FontWeight.w800)))]),
         const SizedBox(height: 14),
         if (prediction == null || battingTeam == null || bowlingTeam == null)
@@ -103,10 +102,10 @@ class LiveScoreDashboard extends StatelessWidget {
         else ...[
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(child: Text('$battingTeam\n${prediction.chasingPercent}%',
-              style: const TextStyle(color: mint, fontWeight: FontWeight.w800))),
+              style: TextStyle(color: mint, fontWeight: FontWeight.w800))),
             const SizedBox(width: 12),
             Expanded(child: Text('$bowlingTeam\n${prediction.defendingPercent}%', textAlign: TextAlign.right,
-              style: const TextStyle(color: gold, fontWeight: FontWeight.w800))),
+              style: TextStyle(color: gold, fontWeight: FontWeight.w800))),
           ]),
           const SizedBox(height: 12),
           ClipRRect(borderRadius: BorderRadius.circular(8), child: SizedBox(height: 10, child: Row(children: [
@@ -136,7 +135,9 @@ class LiveScoreDashboard extends StatelessWidget {
     Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
   ]);
 
-  Widget _ball(BallEvent ball) {
+  Widget _ball(BuildContext context, BallEvent ball) {
+    final gold = Theme.of(context).colorScheme.secondary;
+    final mint = Theme.of(context).colorScheme.primary;
     final color = ball.isWicket ? const Color(0xFFFF6B6B)
       : ball.batterRuns >= 4 ? mint : gold;
     return Semantics(label: '${ball.over}.${ball.ball}: ${ball.marker}', child: Container(
