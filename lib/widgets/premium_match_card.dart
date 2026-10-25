@@ -99,7 +99,7 @@ class PremiumMatchCard extends StatelessWidget {
         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
       const SizedBox(width: 8),
       Text(score ?? '—', style: const TextStyle(fontSize: 14,
-        fontWeight: FontWeight.w900, fontFeatures: [FontFeature.tabularFigures()])),
+        fontWeight: FontWeight.w900)),
     ]);
   }
 }
