@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'lib/**'
+      - 'assets/**'
       - 'android/**'
       - 'test/**'
       - 'README.md'
@@ -34,6 +35,11 @@ jobs:
           cache: true
       - name: Generate Android and iOS platform folders
         run: flutter create . --platforms=android,ios --org com.scorex.app
+      - name: Verify ScoreX launcher branding
+        run: |
+          test -s assets/branding/scorex_logo.png
+          test -s android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze Dart code

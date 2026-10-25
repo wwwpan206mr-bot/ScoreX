@@ -229,9 +229,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.sports_cricket, color: scoreXGold, size: 29),
+            ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.asset('assets/branding/scorex_logo.png', width: 38, height: 38, fit: BoxFit.cover)),
             SizedBox(width: 9),
             Text('ScoreX', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: .4)),
           ],
@@ -441,7 +441,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           const Card(child: ListTile(
             leading: Icon(Icons.info_outline, color: scoreXGold),
             title: Text('About ScoreX'),
-            subtitle: Text('Version 1.0.0 • Cricket live scores'),
+            subtitle: Text('Version 1.0.1 • Cricket live scores'),
           )),
         ],
       );
@@ -697,7 +697,7 @@ class ScoreXSettingsPage extends StatelessWidget {
             child: ListTile(
               leading: Icon(Icons.sports_cricket, color: scoreXGold),
               title: Text('ScoreX Cricket'),
-              subtitle: Text('Version 1.0.0 • Android-first'),
+              subtitle: Text('Version 1.0.1 • Android-first'),
             ),
           ),
           const Card(
