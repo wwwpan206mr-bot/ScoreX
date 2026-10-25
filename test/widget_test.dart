@@ -82,6 +82,8 @@ void main() {
   });
 
   testWidgets('empty live filter explains feed coverage and restores all matches', (tester) async {
+    // This screen renders the real bundled logo; retain the engine asset loader.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMessageHandler('flutter/assets', null);
     await tester.pumpWidget(MaterialApp(home: ScoreHomePage(
       darkMode: true, onThemeChanged: (_) {}, matchRepository: _ResultsOnlyRepository(),
     )));
