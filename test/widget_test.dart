@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:scorex/screens/account_page.dart';
+import 'package:scorex/services/scorex_auth.dart';
 import 'package:scorex/screens/cricket_match_centre.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,5 +51,20 @@ void main() {
     expect(find.text('No verified scorecard available yet'), findsOneWidget);
     await tester.tap(find.byTooltip('Refresh match'));
     expect(refreshed, isTrue);
+  });
+
+  testWidgets('unconfigured builds provide a labelled device guest UID', (tester) async {
+    final auth = ScoreXAuth.instance;
+    await auth.initialize();
+    await auth.enterGuest();
+    expect(auth.uid, startsWith('device_guest_'));
+    final firstUid = auth.uid;
+    await auth.enterGuest();
+    expect(auth.uid, firstUid);
+    await tester.pumpWidget(const MaterialApp(home: ScoreXAccountPage()));
+    expect(find.text('Guest account'), findsOneWidget);
+    expect(find.text(firstUid!), findsOneWidget);
+    expect(find.textContaining('Device-only guest ID'), findsOneWidget);
+    expect(find.text('Create account'), findsNothing);
   });
 }

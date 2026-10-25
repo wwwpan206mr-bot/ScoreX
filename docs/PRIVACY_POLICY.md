@@ -23,3 +23,15 @@ We aim to minimize collected data and protect any future account information. Th
 
 ## Changes
 Material changes will be reflected in an updated policy with a revised date.
+
+
+## Optional accounts and profile photos
+When activated, ScoreX uses Firebase Authentication for email/password and Google sign-in,
+and anonymous authentication for cloud guests. Firebase processes account identifiers and
+sign-in credentials. Google sign-in supplies your name, email and profile photo when available;
+ScoreX does not retrieve photos from arbitrary email addresses. Your UID and supplied photo
+are visible in your own profile. Tokens are managed by the authentication SDK; passwords are
+not saved in app preferences. Before backend activation, guests receive a device-only random ID.
+Use My profile to delete your authentication account; permanent account deletion requires
+recent authentication. Device preferences, such as followed matches, remain local to the device.
+Contact inf.scorex@gmail.com for privacy requests.

@@ -1,0 +1,160 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ScoreXAuth extends ChangeNotifier {
+  ScoreXAuth._();
+  static final instance = ScoreXAuth._();
+  bool ready = false;
+  bool configured = false;
+  bool busy = false;
+  String? error;
+  String? _localUid;
+  String? _webClientId;
+  FirebaseAuth? _auth;
+  StreamSubscription<User?>? _subscription;
+  User? get user => _auth?.currentUser;
+  String? get uid => user?.uid ?? _localUid;
+  bool get guest => user?.isAnonymous ?? (_localUid != null);
+  bool get signedIn => uid != null;
+  String get name => guest ? 'Cricket fan' : user?.displayName ?? 'ScoreX member';
+
+  Future<void> initialize() async {
+    if (ready) return;
+    final prefs = await SharedPreferences.getInstance();
+    _localUid = prefs.getString('scorex_device_guest_uid');
+    try {
+      final config = jsonDecode(await rootBundle.loadString('assets/branding/firebase_config.json')) as Map<String, dynamic>;
+      if (['apiKey', 'appId', 'messagingSenderId', 'projectId'].every((key) => config[key] is String && (config[key] as String).isNotEmpty)) {
+        await Firebase.initializeApp(options: FirebaseOptions(
+          apiKey: config['apiKey'] as String,
+          appId: config['appId'] as String,
+          messagingSenderId: config['messagingSenderId'] as String,
+          projectId: config['projectId'] as String,
+        ));
+        _webClientId = config['googleWebClientId'] as String?;
+        _auth = FirebaseAuth.instance;
+        configured = true;
+        _subscription = _auth!.userChanges().listen((_) => notifyListeners());
+      }
+    } catch (_) {
+      // Scores and a clearly identified device guest remain accessible.
+    }
+    ready = true;
+    notifyListeners();
+  }
+
+  Future<void> run(Future<void> Function() action) async {
+    if (busy) return;
+    busy = true; error = null; notifyListeners();
+    try { await action(); }
+    on FirebaseAuthException catch (e) {
+      error = switch (e.code) {
+        'invalid-credential' => 'Email or password is incorrect.',
+        'email-already-in-use' => 'This email already has an account. Please sign in.',
+        'weak-password' => 'Use a stronger password with at least 6 characters.',
+        'invalid-email' => 'Enter a valid email address.',
+        'network-request-failed' => 'Check your connection and try again.',
+        'too-many-requests' => 'Too many attempts. Please try again later.',
+        'requires-recent-login' => 'Sign in again before deleting your account.',
+        'credential-already-in-use' => 'This Google account is already registered. Use Sign in.',
+        _ => 'Unable to complete this request (${e.code}).',
+      };
+    } catch (_) { error = 'Unable to complete this request. Please try again.'; }
+    finally { busy = false; notifyListeners(); }
+  }
+
+  Future<void> enterGuest() => run(() async {
+    if (configured) {
+      if (_auth!.currentUser == null) await _auth!.signInAnonymously();
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      _localUid ??= 'device_guest_' + List.generate(16, (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+      await prefs.setString('scorex_device_guest_uid', _localUid!);
+    }
+  });
+
+  Future<void> email(String email, String password, {required bool register, String name = ''}) => run(() async {
+    if (!configured) throw StateError('Authentication is not configured');
+    if (register) {
+      final current = user;
+      final credential = EmailAuthProvider.credential(email: email.trim(), password: password);
+      final result = current != null && current.isAnonymous
+          ? await current.linkWithCredential(credential)
+          : await _auth!.createUserWithEmailAndPassword(email: email.trim(), password: password);
+      if (name.trim().isNotEmpty) await result.user!.updateDisplayName(name.trim());
+      try { await result.user!.sendEmailVerification(); }
+      catch (_) { error = 'Account created. Use Resend verification from your profile.'; }
+    } else {
+      await _auth!.signInWithEmailAndPassword(email: email.trim(), password: password);
+    }
+    await _clearLocal();
+  });
+
+  Future<AuthCredential?> _googleCredential() async {
+    final account = await GoogleSignIn(serverClientId: _webClientId, scopes: ['email']).signIn();
+    if (account == null) return null;
+    final tokens = await account.authentication;
+    return GoogleAuthProvider.credential(accessToken: tokens.accessToken, idToken: tokens.idToken);
+  }
+
+  Future<void> google({bool upgrade = false}) => run(() async {
+    if (!configured) throw StateError('Authentication is not configured');
+    final credential = await _googleCredential();
+    if (credential == null) return;
+    if (upgrade && user?.isAnonymous == true) {
+      await user!.linkWithCredential(credential);
+    } else {
+      await _auth!.signInWithCredential(credential);
+    }
+    await _clearLocal();
+  });
+
+  Future<void> reset(String email) => run(() async {
+    await _auth!.sendPasswordResetEmail(email: email.trim());
+  });
+
+  Future<void> verify() => run(() async {
+    await user!.sendEmailVerification();
+  });
+
+  Future<void> reload() => run(() async { await user?.reload(); });
+
+  Future<void> _clearLocal() async {
+    _localUid = null;
+    await (await SharedPreferences.getInstance()).remove('scorex_device_guest_uid');
+  }
+
+  Future<void> logout() => run(() async {
+    await _auth?.signOut();
+    await GoogleSignIn().signOut();
+    await _clearLocal();
+  });
+
+  Future<void> delete(String password) => run(() async {
+    final current = user;
+    if (current != null && !current.isAnonymous) {
+      if (current.providerData.any((p) => p.providerId == 'google.com')) {
+        final credential = await _googleCredential();
+        if (credential == null) return;
+        await current.reauthenticateWithCredential(credential);
+      } else {
+        await current.reauthenticateWithCredential(EmailAuthProvider.credential(email: current.email!, password: password));
+      }
+    }
+    await current?.delete();
+    await _clearLocal();
+  });
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+}

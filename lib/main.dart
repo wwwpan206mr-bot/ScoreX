@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'screens/account_page.dart';
 import 'services/app_update_service.dart';
 import 'data/cricapi_match_repository.dart';
 import 'models/cricket_match.dart';
@@ -93,10 +94,10 @@ class _ScoreXAppState extends State<ScoreXApp> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         ),
       ),
-      home: ScoreHomePage(
+      home: ScoreXAuthGate(child: ScoreHomePage(
         darkMode: _darkMode,
         onThemeChanged: _setTheme,
-      ),
+      )),
     );
   }
 }
@@ -237,6 +238,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           ],
         ),
         actions: [
+          IconButton(tooltip: 'My profile', icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXAccountPage()))),
           IconButton(
             onPressed: _openSettings,
             icon: const Icon(Icons.settings_outlined),
@@ -413,6 +416,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Text('More', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
           ),
+          Card(child: ListTile(
+            leading: const Icon(Icons.account_circle_outlined, color: scoreXGold),
+            title: const Text('My profile & account'),
+            subtitle: const Text('Your UID, email and profile photo'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXAccountPage())),
+          )),
           Card(child: ListTile(
             leading: const Icon(Icons.settings_outlined, color: scoreXGold),
             title: const Text('Settings & Preferences'),

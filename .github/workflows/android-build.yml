@@ -40,6 +40,18 @@ jobs:
           test -s assets/branding/scorex_logo.png
           test -s android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+      - name: Configure optional Firebase accounts
+        env:
+          FIREBASE_CONFIG_JSON: ${{ vars.FIREBASE_CONFIG_JSON }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          config = json.loads(os.environ.get('FIREBASE_CONFIG_JSON') or '{}')
+          if config:
+              for key in ['apiKey', 'appId', 'messagingSenderId', 'projectId']:
+                  assert isinstance(config.get(key), str) and config[key], 'Incomplete Firebase configuration'
+          pathlib.Path('assets/branding/firebase_config.json').write_text(json.dumps(config))
+          PY
       - name: Install dependencies
         run: flutter pub get
       - name: Analyze Dart code
