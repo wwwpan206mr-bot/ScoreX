@@ -58,6 +58,8 @@ jobs:
         run: flutter pub get
       - name: Analyze Dart code
         run: flutter analyze --no-fatal-infos
+      - name: Test cricket proxy pagination
+        run: node --test cloudflare/worker.test.mjs
       - name: Run tests
         run: flutter test
       - name: Build debug APK
@@ -77,3 +79,4 @@ jobs:
             build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 7
+

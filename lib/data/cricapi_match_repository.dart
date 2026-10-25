@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/cricket_match.dart';
 import 'match_repository.dart';
+import 'cricapi_parser.dart';
 
 class CricApiMatchRepository implements MatchRepository {
   const CricApiMatchRepository();
@@ -30,31 +31,19 @@ class CricApiMatchRepository implements MatchRepository {
     return data.whereType<Map>().map((raw) {
       final m = Map<String, dynamic>.from(raw);
       final teams = m['teams'] is List ? m['teams'] as List : [];
-      final scores = m['score'] is List ? m['score'] as List : [];
+      final scores = cricApiScores(m);
       String? scoreForTeam(String? team) {
-        if (team == null) return null;
-        for (final rawScore in scores) {
-          if (rawScore is! Map) continue;
-          final inning = (rawScore['inning'] ?? '').toString().toLowerCase();
-          final teamName = team.toLowerCase();
-          if (inning != teamName && !inning.startsWith('$teamName inning') &&
-              !inning.startsWith('$teamName innings')) continue;
-          final runs = rawScore['r'];
-          final wickets = rawScore['w'];
-          final overs = rawScore['o'];
-          if (runs == null || wickets == null) return null;
-          return '$runs/$wickets' + (overs == null ? '' : ' ($overs ov)');
+        for (final score in scores) {
+          if (score['team'] == team) return score['score'];
         }
         return null;
       }
-      final matchStatus = m['matchEnded'] == true ? MatchStatus.completed
-          : m['matchStarted'] == true ? MatchStatus.live : MatchStatus.upcoming;
       return CricketMatch(
         id: (m['id'] ?? '').toString(),
         title: (m['name'] ?? 'Cricket match').toString(),
-        status: matchStatus,
+        status: cricApiStatus(m),
         venue: m['venue']?.toString(),
-        startTime: DateTime.tryParse((m['dateTimeGMT'] ?? m['date'] ?? '').toString()),
+        startTime: cricApiStartTime(m),
         teamA: teams.isNotEmpty ? teams[0].toString() : null,
         teamB: teams.length > 1 ? teams[1].toString() : null,
         teamAScore: scoreForTeam(teams.isNotEmpty ? teams[0].toString() : null),
@@ -64,3 +53,4 @@ class CricApiMatchRepository implements MatchRepository {
     }).where((m) => status == null || m.status == status).toList();
   }
 }
+

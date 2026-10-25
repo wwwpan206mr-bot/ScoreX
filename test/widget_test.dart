@@ -8,6 +8,8 @@ import 'package:scorex/screens/cricket_match_centre.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scorex/main.dart';
+import 'package:scorex/data/match_repository.dart';
+import 'package:scorex/models/cricket_match.dart';
 import 'package:scorex/screens/feature_pages.dart';
 
 void main() {
@@ -65,6 +67,37 @@ void main() {
     expect(refreshed, isTrue);
   });
 
+  testWidgets('completed match opens result summary without a waiting message', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: CricketMatchCentre(
+      title: 'Mexico Women vs Argentina Women',
+      completed: true,
+      status: 'Argentina Women won by 165 runs',
+      scores: [{'team': 'Argentina Women', 'score': '188/5 (20 ov)'}],
+    )));
+    expect(find.text('Result'), findsOneWidget);
+    expect(find.text('Match result'), findsOneWidget);
+    expect(find.text('Ball-by-ball commentary unavailable'), findsOneWidget);
+    expect(find.text('Live'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('empty live filter explains feed coverage and restores all matches', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: ScoreHomePage(
+      darkMode: true, onThemeChanged: (_) {}, matchRepository: _ResultsOnlyRepository(),
+    )));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ChoiceChip).at(1));
+    await tester.pumpAndSettle();
+    expect(find.text('No live matches in this feed'), findsOneWidget);
+    expect(find.text('Completed fixture'), findsNothing);
+    await tester.ensureVisible(find.text('View all matches'));
+    await tester.tap(find.text('View all matches'));
+    await tester.pumpAndSettle();
+    expect(find.text('Completed fixture'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('unconfigured builds provide a labelled device guest UID', (tester) async {
     final auth = ScoreXAuth.instance;
     await auth.initialize();
@@ -79,4 +112,13 @@ void main() {
     expect(find.textContaining('Device-only guest ID'), findsOneWidget);
     expect(find.text('Create account'), findsNothing);
   });
+}
+
+
+class _ResultsOnlyRepository implements MatchRepository {
+  @override
+  Future<List<CricketMatch>> getMatches({MatchStatus? status}) async => const [
+    CricketMatch(id: 'finished', title: 'Completed fixture', status: MatchStatus.completed,
+      teamA: 'Team A', teamB: 'Team B', result: 'Team A won by 10 runs'),
+  ];
 }

@@ -10,6 +10,7 @@ class CricketMatchCentre extends StatelessWidget {
     this.innings,
     this.title = 'Match Centre',
     this.status,
+    this.completed = false,
     this.scores = const [],
     this.onRefresh,
     this.refreshing = false,
@@ -26,6 +27,7 @@ class CricketMatchCentre extends StatelessWidget {
 
   final String title;
   final String? status;
+  final bool completed;
   final List<Map<String, String>> scores;
   final VoidCallback? onRefresh;
   final bool refreshing;
@@ -48,10 +50,10 @@ class CricketMatchCentre extends StatelessWidget {
         appBar: AppBar(
           title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
           actions: [IconButton(onPressed: refreshing ? null : onRefresh, tooltip: 'Refresh match', icon: const Icon(Icons.refresh_rounded))],
-          bottom: const TabBar(
+          bottom: TabBar(
             isScrollable: true,
             tabs: [
-              Tab(text: 'Live'),
+              Tab(text: completed ? 'Result' : 'Overview'),
               Tab(text: 'Scorecard'),
               Tab(text: 'Squads'),
               Tab(text: 'Stats'),
@@ -81,7 +83,7 @@ class CricketMatchCentre extends StatelessWidget {
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       for (final score in scores)
         Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(children: [
-          Expanded(child: Text(score['team'] ?? 'Innings',
+          Expanded(child: Text(score['team'] ?? 'Innings', maxLines: 2, overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
           const SizedBox(width: 12),
           Flexible(child: Text(score['score'] ?? '—', textAlign: TextAlign.right,
@@ -117,7 +119,25 @@ class CricketMatchCentre extends StatelessWidget {
   );
 
   Widget _live() {
-    if (deliveries.isEmpty) return _panel('Ball-by-ball', _empty('commentary'));
+    if (deliveries.isEmpty) return _panel(completed ? 'Match result' : 'Match overview',
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (status?.isNotEmpty == true) ...[
+          Text(status!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+        ],
+        if (venue?.isNotEmpty == true) ...[
+          Text('Venue: $venue'),
+          const SizedBox(height: 12),
+        ],
+        const Row(children: [
+          Icon(Icons.info_outline, size: 20, color: Color(0xFFFFC857)),
+          SizedBox(width: 8),
+          Expanded(child: Text('Ball-by-ball commentary unavailable')),
+        ]),
+        const SizedBox(height: 6),
+        const Text('This feed returned innings totals but no delivery commentary for this match.',
+          style: TextStyle(color: Colors.grey)),
+      ]));
     final ordered = deliveries.reversed.toList();
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -216,3 +236,4 @@ class CricketMatchCentre extends StatelessWidget {
     ).toList()));
   }
 }
+

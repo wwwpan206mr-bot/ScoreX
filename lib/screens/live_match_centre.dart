@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'cricket_match_centre.dart';
+import '../data/cricapi_parser.dart';
+import '../models/cricket_match.dart';
 
 class LiveMatchCentre extends StatefulWidget {
   const LiveMatchCentre({super.key, required this.matchId});
@@ -78,21 +80,12 @@ class _LiveMatchCentreState extends State<LiveMatchCentre> with WidgetsBindingOb
         )),
       );
     }
-    final rawScores = data['score'];
-    final scores = <Map<String, String>>[];
-    if (rawScores is List) {
-      for (final raw in rawScores.whereType<Map>()) {
-        scores.add({
-          'team': (raw['inning'] ?? 'Innings').toString(),
-          'score': raw['r'] == null || raw['w'] == null ? '—' :
-            '${raw['r']}/${raw['w']}${raw['o'] == null ? '' : ' (${raw['o']} ov)'}',
-        });
-      }
-    }
+    final scores = cricApiScores(data);
     return CricketMatchCentre(
       title: (data['name'] ?? 'Match Centre').toString(),
       status: data['status']?.toString(),
       scores: scores,
+      completed: {MatchStatus.completed, MatchStatus.abandoned}.contains(cricApiStatus(data)),
       onRefresh: _refresh,
       refreshing: _loading,
       refreshError: _error,
@@ -101,3 +94,4 @@ class _LiveMatchCentreState extends State<LiveMatchCentre> with WidgetsBindingOb
     );
   }
 }
+

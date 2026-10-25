@@ -27,7 +27,41 @@ export default {
       if (!response.ok || payload.status === 'failure') {
         return reply({ error: 'Cricket data provider request failed', status: response.status }, 502);
       }
-      const output = reply({ data: detail ? (payload.data ?? null) : (Array.isArray(payload.data) ? payload.data : []), updatedAt: new Date().toISOString() });
+      let data = detail ? (payload.data ?? null) : payload.data;
+      if (!detail && !Array.isArray(data)) {
+        return reply({ error: 'Invalid cricket provider response' }, 502);
+      }
+      let partial = false;
+      let pagesFetched = 1;
+      if (!detail) {
+        const seen = new Set(data.map(match => match.id));
+        let page = data;
+        let offset = page.length;
+        let total = Number(payload.info?.totalRows);
+        const maxPages = Math.max(1, Math.min(4, Number.parseInt(env.MAX_MATCH_PAGES ?? '3', 10) || 3));
+        // Fetch a bounded number of pages only when the response indicates more.
+        while (page.length === 25 && (!Number.isFinite(total) || offset < total)) {
+          if (pagesFetched >= maxPages) { partial = true; break; }
+          upstream.searchParams.set('offset', String(offset));
+          try {
+            const nextResponse = await fetch(upstream, { headers: { Accept: 'application/json' } });
+            const next = await nextResponse.json();
+            if (!nextResponse.ok || next.status === 'failure' || !Array.isArray(next.data)) {
+              partial = true; break;
+            }
+            pagesFetched++;
+            page = next.data;
+            const unique = page.filter(match => match.id && !seen.has(match.id));
+            for (const match of unique) seen.add(match.id);
+            data = [...data, ...unique];
+            offset += page.length;
+            if (page.length && !unique.length) { partial = true; break; }
+            if (Number.isFinite(Number(next.info?.totalRows))) total = Number(next.info.totalRows);
+          } catch (_) { partial = true; break; }
+        }
+      }
+      const output = reply({ data, updatedAt: new Date().toISOString(),
+        ...(!detail ? { coverage: { partial, pagesFetched } } : {}) });
       output.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
       ctx.waitUntil(cache.put(cacheKey, output.clone()));
       return output;
@@ -36,3 +70,4 @@ export default {
     }
   }
 };
+

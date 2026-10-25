@@ -2,6 +2,7 @@ import 'dart:async';
 import 'screens/account_page.dart';
 import 'services/app_update_service.dart';
 import 'data/cricapi_match_repository.dart';
+import 'data/match_repository.dart';
 import 'models/cricket_match.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -107,10 +108,12 @@ class ScoreHomePage extends StatefulWidget {
     super.key,
     required this.darkMode,
     required this.onThemeChanged,
+    this.matchRepository = const CricApiMatchRepository(),
   });
 
   final bool darkMode;
   final ValueChanged<bool> onThemeChanged;
+  final MatchRepository matchRepository;
 
   @override
   State<ScoreHomePage> createState() => _ScoreHomePageState();
@@ -128,7 +131,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   bool _loadingPreferences = true;
   bool _notificationsEnabled = false;
   String _filter = 'All';
-  final _matchRepository = const CricApiMatchRepository();
   List<CricketMatch> _matches = [];
   String? _matchError;
   bool _loadingMatches = true;
@@ -179,7 +181,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     if (_fetchingMatches) return;
     _fetchingMatches = true;
     try {
-      final matches = await _matchRepository.getMatches();
+      final matches = await widget.matchRepository.getMatches();
       if (!mounted) return;
       setState(() { _matches = matches; _matchError = null; _loadingMatches = false; _lastMatchRefresh = DateTime.now(); });
     } catch (error) {
@@ -212,7 +214,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     final matches = _matches.where((m) {
       if (_filter == 'Live' && m.status != MatchStatus.live) return false;
       if (_filter == 'Upcoming' && m.status != MatchStatus.upcoming) return false;
-      if (_filter == 'Results' && m.status != MatchStatus.completed) return false;
+      if (_filter == 'Results' && m.status != MatchStatus.completed && m.status != MatchStatus.abandoned) return false;
       if (_filter == 'Following' && !_favoriteIds.contains(m.id)) return false;
       return query.isEmpty || [m.title, m.teamA ?? '', m.teamB ?? '', m.series ?? '']
         .any((value) => value.toLowerCase().contains(query));
@@ -221,7 +223,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     matches.sort((a, b) {
       final status = rank(a).compareTo(rank(b));
       if (status != 0) return status;
-      return (b.startTime ?? DateTime(2000)).compareTo(a.startTime ?? DateTime(2000));
+      return a.status == MatchStatus.upcoming
+          ? (a.startTime ?? DateTime(2100)).compareTo(b.startTime ?? DateTime(2100))
+          : (b.startTime ?? DateTime(2000)).compareTo(a.startTime ?? DateTime(2000));
     });
     return matches;
   }
@@ -285,7 +289,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
               children: [
                 Expanded(
                   child: Text(
-                    _navigationIndex == 2 ? 'All matches' : 'Match spotlight',
+                    _navigationIndex == 2 ? (_filter == 'All' ? 'All matches' : '$_filter matches') : 'Match spotlight',
                     style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -300,9 +304,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             if (_lastMatchRefresh != null)
               Text('Last checked: ${TimeOfDay.fromDateTime(_lastMatchRefresh!).format(context)} • Auto refresh every 30s', style: const TextStyle(fontSize: 11, color: Colors.grey)),
             const SizedBox(height: 12),
-            Wrap(
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
               spacing: 8,
-              runSpacing: 8,
               children: ['All', 'Live', 'Upcoming', 'Results', 'Following']
                   .map((item) => ChoiceChip(
                         label: Text(item),
@@ -321,6 +326,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                         ),
                       ))
                   .toList(),
+              ),
             ),
             const SizedBox(height: 14),
             if (_loadingMatches)
@@ -342,10 +348,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                   onTap: () => _openMatchCentre(match.id),
                 ),
               if (_visibleMatches.isEmpty)
-                _emptyState(context, icon: Icons.sports_cricket, title: 'No matches found', message: 'Try another filter or search. Star a match to add it to Following.'),
+                _filteredEmptyState(context),
             ],
             const SizedBox(height: 18),
-            _featureGrid(context),
+            if (_navigationIndex == 0) _featureGrid(context),
             const SizedBox(height: 20),
             const Center(
               child: Text(
@@ -404,6 +410,29 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
         ),
       ),
     );
+  }
+
+  Widget _filteredEmptyState(BuildContext context) {
+    final searching = _searchController.text.trim().isNotEmpty;
+    final title = searching ? 'No search results'
+        : _filter == 'Live' ? 'No live matches in this feed'
+        : _filter == 'Upcoming' ? 'No upcoming fixtures in this feed'
+        : _filter == 'Results' ? 'No results in this feed'
+        : _filter == 'Following' ? 'No followed matches available'
+        : 'No matches returned by the provider';
+    final message = searching ? 'Try a team name or clear your search.'
+        : _filter == 'Following' ? 'Star matches in All to follow them. Only matches returned by the feed appear here.'
+        : 'The provider returned ${_matches.length} matches. Coverage can be limited; refresh or view all available matches.';
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _emptyState(context, icon: Icons.sports_cricket, title: title, message: message),
+      Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+        TextButton.icon(
+          onPressed: () => setState(() { _filter = 'All'; _searchController.clear(); }),
+          icon: const Icon(Icons.list_alt), label: const Text('View all matches')),
+        TextButton.icon(onPressed: _fetchingMatches ? null : _loadMatches,
+          icon: const Icon(Icons.refresh), label: const Text('Refresh scores')),
+      ]),
+    ]);
   }
 
   Widget _navigationSection(BuildContext context) {
@@ -603,15 +632,23 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
         return Card(
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => ['Live score', 'Commentary', 'Scorecard'].contains(feature.title) && _matches.isNotEmpty
-                  ? LiveMatchCentre(matchId: _visibleMatches.isNotEmpty ? _visibleMatches.first.id : _matches.first.id)
-                  : feature.title == 'Fixtures & Series'
+            onTap: () {
+              if (['Live score', 'Commentary', 'Scorecard'].contains(feature.title)) {
+                setState(() {
+                  _navigationIndex = 2;
+                  _filter = feature.title == 'Live score' ? 'Live' : 'All';
+                  _searchController.clear();
+                });
+                return;
+              }
+              Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => feature.title == 'Fixtures & Series'
                   ? const FixturesCalendarPage()
                   : feature.title == 'Statistics'
                       ? const ScoreXAdvancedAnalytics()
                       : ScoreXFeaturePage(title: feature.title),
-            )),
+            ));
+            },
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -824,3 +861,4 @@ class _MatchCentrePanel extends StatelessWidget {
     );
   }
 }
+
