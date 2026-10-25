@@ -404,6 +404,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   }
 
   Widget _navigationSection(BuildContext context) {
+    if (_navigationIndex == 1) return FixturesCalendarPage(matches: _matches);
     if (_navigationIndex == 5) {
       return ListView(
         padding: const EdgeInsets.all(16),
