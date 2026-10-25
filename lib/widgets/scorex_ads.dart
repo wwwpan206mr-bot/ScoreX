@@ -79,7 +79,7 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
           ),
         );
       } else {
-        final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+        final size = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
         if (!mounted || generation != _generation || !_service.ready.value || size == null) return;
         candidate = BannerAd(
           adUnitId: _service.bannerId, size: size, request: const AdRequest(),
@@ -105,7 +105,8 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_service.ready.value) return const SizedBox.shrink();
+    final unitId = widget.format == ScoreXAdFormat.native ? _service.nativeId : _service.bannerId;
+    if (!_service.ready.value || unitId.isEmpty) return const SizedBox.shrink();
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth.floor();
       if (width < 320) return const SizedBox.shrink();

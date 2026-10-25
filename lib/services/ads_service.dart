@@ -22,10 +22,14 @@ class AdsService {
     if (!supported) return;
     try {
       final config = jsonDecode(await rootBundle.loadString('assets/ads/config.json')) as Map<String, dynamic>;
-      testMode = config['testMode'] != false;
+      testMode = kDebugMode || config['testMode'] != false;
       bannerId = config['bannerId'] as String? ?? '';
       nativeId = config['nativeId'] as String? ?? '';
-      if (bannerId.isEmpty || nativeId.isEmpty) return;
+      if (testMode) {
+        if (bannerId.isNotEmpty) bannerId = 'ca-app-pub-3940256099942544/9214589741';
+        if (nativeId.isNotEmpty) nativeId = 'ca-app-pub-3940256099942544/2247696110';
+      }
+      if (bannerId.isEmpty && nativeId.isEmpty) return;
       // Preflight the platform channel so widget tests/unsupported hosts fail safely.
       await ConsentInformation.instance.getConsentStatus();
       final consent = Completer<void>();

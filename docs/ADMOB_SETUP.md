@@ -2,9 +2,9 @@
 
 The Android match centre has a native medium card after player figures and an anchored adaptive banner at the bottom, outside the score content. Both are labelled. Failed/no-fill ads collapse. Unsupported platforms show no ads. Existing installed APKs need a new build to receive this feature.
 
-## Default: test advertisements
+## Current configuration: publisher banner
 
-All three Android workflows run `scripts/configure_ads.py` after platform generation. With no variables configured, Google test App ID and ad units are used. Test ads do not earn money. Never click your own production ads to test them.
+All three Android workflows run `scripts/configure_ads.py` after platform generation. The committed config now includes the owner's App ID and confirmed Banner unit. Release builds use this banner by default. Native is disabled until a separate Native advanced unit is supplied. Debug builds always substitute Google test units for configured placements. Explicit ADMOB_TEST_MODE=true also creates release test builds. Test ads do not earn money. Never click your own production ads to test them.
 
 ## Enable publisher ads
 
@@ -24,11 +24,11 @@ All three Android workflows run `scripts/configure_ads.py` after platform genera
 6. Publish the updated privacy policy at your public privacy-policy URL. Review Google Play's Contains ads, Data safety and target audience declarations against the actual SDKs/configuration. Complete app readiness/store linking and app-ads.txt verification as requested in your AdMob account.
 7. Run **Play Store Signed Release** for a stable signed production build, or **Optimized Android Release** for test APKs. Download and install the new ARM64 APK on the phone. AAB is for Play Console.
 
-For local builds run `python3 scripts/configure_ads.py` before `flutter build`. Production mode fails early if IDs are missing, malformed, Google's test publisher ID, or from different publishers.
+For local builds run `python3 scripts/configure_ads.py` before `flutter build`. Production mode requires an App ID and at least one ad unit; unused formats remain disabled. It rejects malformed IDs, Google's test publisher ID, different publishers, and reuse of one unit across formats. Blank Actions variables preserve the committed configuration.
 
 ## Verify on an Android device
 
-- First use a build with `ADMOB_TEST_MODE=true`. Open a match → Live and scroll below player figures: confirm the native test card and the bottom test banner, including ad attribution/AdChoices.
+- First use a build with `ADMOB_TEST_MODE=true`. Open a match → Live and scroll below player figures: confirm the bottom test banner (native is hidden until configured), including ad attribution/AdChoices.
 - Test narrow screens, landscape, large fonts, dark/light themes and navigation. Scores and controls must remain usable without overlap.
 - Test offline/no-fill and consent error: score access must still work and no blank ad block should remain.
 - Where a consent message applies, test it using UMP's documented debug geography/test-device settings in a development build; do not ship consent debug settings. Review privacy choices and check old ads are removed before any new consent-based requests.
