@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scorex/screens/cricket_match_centre.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scorex/main.dart';
@@ -31,5 +32,22 @@ void main() {
     );
     await tester.pump();
     expect(find.text('News and highlights source not connected'), findsOneWidget);
+  });
+
+  testWidgets('match centre retains score header when switching tabs', (tester) async {
+    var refreshed = false;
+    await tester.pumpWidget(MaterialApp(home: CricketMatchCentre(
+      title: 'Team A vs Team B',
+      status: 'Team A batting',
+      scores: const [{'team': 'Team A', 'score': '120/3 (15 ov)'}],
+      onRefresh: () => refreshed = true,
+    )));
+    expect(find.text('120/3 (15 ov)'), findsOneWidget);
+    await tester.tap(find.text('Scorecard'));
+    await tester.pumpAndSettle();
+    expect(find.text('120/3 (15 ov)'), findsOneWidget);
+    expect(find.text('No verified scorecard available yet'), findsOneWidget);
+    await tester.tap(find.byTooltip('Refresh match'));
+    expect(refreshed, isTrue);
   });
 }
