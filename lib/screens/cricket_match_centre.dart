@@ -8,6 +8,12 @@ class CricketMatchCentre extends StatelessWidget {
   const CricketMatchCentre({
     super.key,
     this.innings,
+    this.title = 'Match Centre',
+    this.status,
+    this.scores = const [],
+    this.onRefresh,
+    this.refreshing = false,
+    this.refreshError,
     this.deliveries = const [],
     this.batting = const [],
     this.bowling = const [],
@@ -18,6 +24,12 @@ class CricketMatchCentre extends StatelessWidget {
     this.weather,
   });
 
+  final String title;
+  final String? status;
+  final List<Map<String, String>> scores;
+  final VoidCallback? onRefresh;
+  final bool refreshing;
+  final String? refreshError;
   final InningsSummary? innings;
   final List<BallEvent> deliveries;
   final List<Map<String, String>> batting;
@@ -34,7 +46,8 @@ class CricketMatchCentre extends StatelessWidget {
       length: 5,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Match Centre'),
+          title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          actions: [IconButton(onPressed: refreshing ? null : onRefresh, tooltip: 'Refresh match', icon: const Icon(Icons.refresh_rounded))],
           bottom: const TabBar(
             isScrollable: true,
             tabs: [
@@ -46,16 +59,41 @@ class CricketMatchCentre extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(children: [
+        body: Column(children: [
+          _scoreHeader(),
+          Expanded(child: TabBarView(children: [
           _live(),
           _scorecard(),
           _squads(),
           _stats(),
           _info(),
+        ])),
         ]),
       ),
     );
   }
+
+  Widget _scoreHeader() => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(18),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(colors: [Color(0xFF15533E), Color(0xFF09271D)])),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      for (final score in scores)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(children: [
+          Expanded(child: Text(score['team'] ?? 'Innings',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+          const SizedBox(width: 12),
+          Flexible(child: Text(score['score'] ?? '—', textAlign: TextAlign.right,
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900))),
+        ])),
+      if (status?.isNotEmpty == true) Padding(padding: const EdgeInsets.only(top: 10),
+        child: Text(status!, style: const TextStyle(color: Color(0xFFFFC857), fontWeight: FontWeight.w700))),
+      if (refreshing) const Padding(padding: EdgeInsets.only(top: 8), child: LinearProgressIndicator(minHeight: 2)),
+      if (refreshError != null) Text('Refresh failed • showing last loaded data',
+        style: const TextStyle(color: Color(0xFFFFC857), fontSize: 11)),
+    ]),
+  );
 
   Widget _panel(String title, Widget child) => ListView(
     padding: const EdgeInsets.all(16),
@@ -73,7 +111,7 @@ class CricketMatchCentre extends StatelessWidget {
       const SizedBox(height: 12),
       Text('No verified $name available yet', textAlign: TextAlign.center),
       const SizedBox(height: 6),
-      const Text('Connect the cricket data provider to populate this screen.',
+      const Text('The current feed does not supply this information.',
         textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
     ],
   );
