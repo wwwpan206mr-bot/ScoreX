@@ -41,6 +41,7 @@ class ScoreXAuth extends ChangeNotifier {
         _webClientId = config['googleWebClientId'] as String?;
         _auth = FirebaseAuth.instance;
         configured = true;
+        await _clearLocal();
         _subscription = _auth!.userChanges().listen((_) => notifyListeners());
       }
     } catch (_) {
@@ -133,8 +134,11 @@ class ScoreXAuth extends ChangeNotifier {
 
   Future<void> logout() => run(() async {
     await _auth?.signOut();
-    await GoogleSignIn().signOut();
-    await _clearLocal();
+    try {
+      if (configured && _webClientId?.isNotEmpty == true) await GoogleSignIn(serverClientId: _webClientId).signOut();
+    } finally {
+      await _clearLocal();
+    }
   });
 
   Future<void> delete(String password) => run(() async {
