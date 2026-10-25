@@ -92,6 +92,8 @@ void main() {
       darkMode: true, onThemeChanged: (_) {}, matchRepository: _ResultsOnlyRepository(),
     )));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Matches'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byType(ChoiceChip).at(1));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(ChoiceChip).at(1));
