@@ -56,6 +56,22 @@ jobs:
         run: flutter build apk --release --split-per-abi --tree-shake-icons --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
       - name: Build Play Store App Bundle
         run: flutter build appbundle --release --tree-shake-icons --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+      - name: Export actual APK signing fingerprints
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk_path=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          build_tools_dir=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          "$build_tools_dir/apksigner" verify --print-certs "$apk_path" | tee scorex-signing-fingerprints.txt
+          {
+            echo '### ScoreX APK certificate fingerprints'
+            echo 'These fingerprints belong to the ARM64 APK in this workflow run.'
+            echo 'Register its SHA-1 and SHA-256 in Firebase for this APK.'
+            echo 'Current builds still need a stable production signing key; a later run may use a different certificate.'
+            echo '\`\`\`text'
+            cat scorex-signing-fingerprints.txt
+            echo '\`\`\`'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Show file sizes
         run: du -h build/app/outputs/flutter-apk/*.apk build/app/outputs/bundle/release/*.aab
       - name: Upload release APKs and AAB
@@ -63,6 +79,7 @@ jobs:
         with:
           name: scorex-optimized-android-release
           path: |
+            scorex-signing-fingerprints.txt
             build/app/outputs/flutter-apk/*.apk
             build/app/outputs/bundle/release/*.aab
           if-no-files-found: error
