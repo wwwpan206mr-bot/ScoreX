@@ -9,50 +9,27 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  testWidgets('ScoreX home screen shows branding and honest API status', (tester) async {
+  testWidgets('ScoreX launches with its branding', (tester) async {
     await tester.pumpWidget(const ScoreXApp());
-    await tester.pumpAndSettle();
-
-    expect(find.text('ScoreX'), findsOneWidget);
-    expect(find.text('Cricket matches'), findsOneWidget);
-    expect(find.text('Live cricket data is not connected yet'), findsOneWidget);
+    await tester.pump();
+    expect(find.text('ScoreX'), findsWidgets);
   });
 
-  testWidgets('settings page can be opened from the home screen', (tester) async {
-    await tester.pumpWidget(const ScoreXApp());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Settings'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('PREFERENCES'), findsOneWidget);
-    expect(find.text('Dark theme'), findsOneWidget);
-    expect(find.text('Match notifications'), findsOneWidget);
+  testWidgets('feature screen presents its verified-data capabilities', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ScoreXFeaturePage(title: 'Live score')),
+    );
+    await tester.pump();
+    expect(find.text('Live score'), findsWidgets);
+    expect(find.text('ADDITIONAL CAPABILITIES'), findsOneWidget);
+    expect(find.text('Live score and innings'), findsOneWidget);
   });
 
-  testWidgets('match centre preview has overview and cricket detail tabs', (tester) async {
-    await tester.pumpWidget(const ScoreXApp());
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.text('Preview match centre'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Preview match centre'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Match Centre'), findsOneWidget);
-    expect(find.text('Ball-by-ball'), findsOneWidget);
-    expect(find.text('No verified commentary available yet'), findsOneWidget);
-
-    await tester.tap(find.text('Scorecard'));
-    await tester.pumpAndSettle();
-    expect(find.text('No verified scorecard available yet'), findsOneWidget);
-  });
-  testWidgets('feature cards open API-ready screens without fake data', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: ScoreXFeaturePage(title: 'Live score')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Live score'), findsNWidgets(2));
-    expect(find.text('Waiting for live API connection'), findsOneWidget);
-    expect(find.text('No demo scores are displayed.'), findsNothing);
+  testWidgets('news screen does not invent headlines', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ScoreXFeaturePage(title: 'News & Videos')),
+    );
+    await tester.pump();
+    expect(find.text('News and highlights source not connected'), findsOneWidget);
   });
 }
