@@ -31,10 +31,21 @@ class CricApiMatchRepository implements MatchRepository {
       final m = Map<String, dynamic>.from(raw);
       final teams = m['teams'] is List ? m['teams'] as List : [];
       final scores = m['score'] is List ? m['score'] as List : [];
-      String? score(int index) {
-        if (scores.length <= index || scores[index] is! Map) return null;
-        final s = scores[index] as Map;
-        return s['r'].toString() + '/' + s['w'].toString() + ' (' + s['o'].toString() + ' ov)';
+      String? scoreForTeam(String? team) {
+        if (team == null) return null;
+        for (final rawScore in scores) {
+          if (rawScore is! Map) continue;
+          final inning = (rawScore['inning'] ?? '').toString().toLowerCase();
+          final teamName = team.toLowerCase();
+          if (inning != teamName && !inning.startsWith('$teamName inning') &&
+              !inning.startsWith('$teamName innings')) continue;
+          final runs = rawScore['r'];
+          final wickets = rawScore['w'];
+          final overs = rawScore['o'];
+          if (runs == null || wickets == null) return null;
+          return '$runs/$wickets' + (overs == null ? '' : ' ($overs ov)');
+        }
+        return null;
       }
       final matchStatus = m['matchEnded'] == true ? MatchStatus.completed
           : m['matchStarted'] == true ? MatchStatus.live : MatchStatus.upcoming;
@@ -46,8 +57,8 @@ class CricApiMatchRepository implements MatchRepository {
         startTime: DateTime.tryParse((m['dateTimeGMT'] ?? m['date'] ?? '').toString()),
         teamA: teams.isNotEmpty ? teams[0].toString() : null,
         teamB: teams.length > 1 ? teams[1].toString() : null,
-        teamAScore: score(0),
-        teamBScore: score(1),
+        teamAScore: scoreForTeam(teams.isNotEmpty ? teams[0].toString() : null),
+        teamBScore: scoreForTeam(teams.length > 1 ? teams[1].toString() : null),
         result: m['status']?.toString(),
       );
     }).where((m) => status == null || m.status == status).toList();
