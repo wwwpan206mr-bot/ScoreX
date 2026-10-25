@@ -10,6 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scorex/main.dart';
 import 'package:scorex/data/match_repository.dart';
 import 'package:scorex/models/cricket_match.dart';
+import 'package:scorex/models/ball_event.dart';
+import 'package:scorex/models/innings_summary.dart';
+import 'package:scorex/models/win_estimate.dart';
+import 'package:scorex/widgets/live_score_dashboard.dart';
 import 'package:scorex/screens/feature_pages.dart';
 
 void main() {
@@ -78,6 +82,38 @@ void main() {
     expect(find.text('Match result'), findsOneWidget);
     expect(find.text('Ball-by-ball commentary unavailable'), findsOneWidget);
     expect(find.text('Live'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('live dashboard renders real delivery markers and experimental percentages', (tester) async {
+    tester.view.physicalSize = const Size(390, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: LiveScoreDashboard(
+      innings: InningsSummary(runs: 136, wickets: 4, legalBalls: 96, target: 170, scheduledOvers: 20),
+      battingTeam: 'Team B', bowlingTeam: 'Team A', estimate: WinEstimate(60, 39, 1),
+      deliveries: [
+        BallEvent(over: 15, ball: 5, runs: 0, isWicket: true),
+        BallEvent(over: 15, ball: 6, runs: 4, batterRuns: 4),
+      ],
+    ))));
+    expect(find.text('34 runs needed in 24 balls'), findsOneWidget);
+    expect(find.text('W'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Estimated win probability'), 150);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('60%'), findsOneWidget);
+    expect(find.textContaining('not trained AI'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('delayed data suppresses estimates instead of showing live percentages', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: LiveScoreDashboard(
+      stale: true, battingTeam: 'Team B', bowlingTeam: 'Team A', estimate: WinEstimate(60, 39, 1),
+    ))));
+    expect(find.textContaining('Updates delayed'), findsOneWidget);
+    expect(find.textContaining('60%'), findsNothing);
+    expect(find.textContaining('Estimate paused'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

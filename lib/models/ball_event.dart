@@ -9,6 +9,7 @@ class BallEvent {
     this.isWicket = false,
     this.isLegalDelivery = true,
     this.commentary,
+    this.extraType,
   });
 
   final int over;
@@ -19,9 +20,12 @@ class BallEvent {
   final bool isWicket;
   final bool isLegalDelivery;
   final String? commentary;
+  final String? extraType;
 
   String get marker {
     if (isWicket) return 'W';
+    if (extraType == 'wide') return extras > 1 ? '${extras}Wd' : 'Wd';
+    if (extraType == 'noBall') return runs > 1 ? '${runs}Nb' : 'Nb';
     if (batterRuns == 4) return '4';
     if (batterRuns == 6) return '6';
     return runs.toString();
@@ -41,6 +45,7 @@ class BallEvent {
       isWicket: boolean(json['isWicket']),
       isLegalDelivery: boolean(json['isLegalDelivery'], fallback: true),
       commentary: json['commentary']?.toString(),
+      extraType: json['extraType']?.toString(),
     );
   }
 }

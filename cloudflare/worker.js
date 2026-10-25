@@ -3,11 +3,48 @@ const ORIGIN = 'https://api.cricapi.com/v1/currentMatches';
 const reply = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60' }
 });
+// Adapter for an authorised backend supplying ScoreX's documented live schema.
+// This never calls paid CricAPI Fantasy endpoints under a free subscription.
+async function liveFeed(url, env, ctx) {
+  const matchId = url.searchParams.get('id');
+  if (!matchId || !/^[a-zA-Z0-9-]{1,100}$/.test(matchId)) return reply({ error: 'Invalid match id' }, 400);
+  if (!env.LIVE_FEED_URL) return reply({ data: null, available: false, reason: 'delivery_feed_unavailable' });
+  try {
+    const endpoint = new URL(env.LIVE_FEED_URL);
+    if (endpoint.protocol !== 'https:') return reply({ error: 'Delivery source unavailable' }, 503);
+    endpoint.searchParams.set('id', matchId);
+    const cacheKey = new Request(url.origin + '/live?id=' + encodeURIComponent(matchId));
+    const cached = await caches.default.match(cacheKey);
+    if (cached) return cached;
+    const headers = { Accept: 'application/json' };
+    if (env.LIVE_FEED_TOKEN) headers.Authorization = 'Bearer ' + env.LIVE_FEED_TOKEN;
+    const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(8000) });
+    if (!response.ok) return reply({ error: 'Delivery source temporarily unavailable' }, 502);
+    const text = await response.text();
+    if (text.length > 1000000) return reply({ error: 'Delivery response too large' }, 502);
+    const payload = JSON.parse(text);
+    const data = payload.data;
+    if (!data || data.matchId !== matchId || typeof data.source !== 'string' || !data.source.trim() ||
+        typeof data.inningsId !== 'string' || !data.inningsId ||
+        typeof data.updatedAt !== 'string' || !/Z$/.test(data.updatedAt) ||
+        !Number.isFinite(Date.parse(data.updatedAt)) || !Array.isArray(data.deliveries)) {
+      return reply({ error: 'Delivery source returned invalid data' }, 502);
+    }
+    const output = reply({ data, available: true });
+    output.headers.set('Cache-Control', 'public, max-age=20, s-maxage=20');
+    ctx.waitUntil(caches.default.put(cacheKey, output.clone()));
+    return output;
+  } catch (_) {
+    return reply({ error: 'Delivery source temporarily unavailable' }, 502);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (request.method !== 'GET') return reply({ error: 'Method not allowed' }, 405);
     if (url.pathname === '/health') return reply({ status: 'ok', configured: Boolean(env.CRICAPI_KEY) });
+    if (url.pathname === '/live') return liveFeed(url, env, ctx);
     const detail = url.pathname === '/match';
     if (url.pathname !== '/matches' && !detail) return reply({ error: 'Not found' }, 404);
     const matchId = url.searchParams.get('id');

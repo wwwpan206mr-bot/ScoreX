@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/ball_event.dart';
 import '../models/innings_summary.dart';
+import '../models/win_estimate.dart';
+import '../widgets/live_score_dashboard.dart';
 
 /// A reusable match-centre view. All values are supplied by a data source;
 /// missing data is shown explicitly instead of fabricated.
@@ -23,6 +25,8 @@ class CricketMatchCentre extends StatelessWidget {
     this.toss,
     this.pitchReport,
     this.weather,
+    this.battingTeam, this.bowlingTeam, this.estimate,
+    this.deliveryUpdatedAt, this.deliverySource, this.deliveryStale = false, this.deliveryMessage,
   });
 
   final String title;
@@ -41,11 +45,18 @@ class CricketMatchCentre extends StatelessWidget {
   final String? toss;
   final String? pitchReport;
   final String? weather;
+  final String? battingTeam;
+  final String? bowlingTeam;
+  final WinEstimate? estimate;
+  final DateTime? deliveryUpdatedAt;
+  final String? deliverySource;
+  final bool deliveryStale;
+  final String? deliveryMessage;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         appBar: AppBar(
           title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -53,7 +64,8 @@ class CricketMatchCentre extends StatelessWidget {
           bottom: TabBar(
             isScrollable: true,
             tabs: [
-              Tab(text: completed ? 'Result' : 'Overview'),
+              Tab(text: completed ? 'Result' : 'Live'),
+              const Tab(text: 'Commentary'),
               Tab(text: 'Scorecard'),
               Tab(text: 'Squads'),
               Tab(text: 'Stats'),
@@ -64,6 +76,10 @@ class CricketMatchCentre extends StatelessWidget {
         body: Column(children: [
           _scoreHeader(),
           Expanded(child: TabBarView(children: [
+          LiveScoreDashboard(innings: innings, deliveries: deliveries, batting: batting, bowling: bowling,
+            estimate: estimate, battingTeam: battingTeam, bowlingTeam: bowlingTeam,
+            updatedAt: deliveryUpdatedAt, source: deliverySource, stale: deliveryStale,
+            deliveryMessage: deliveryMessage, completed: completed, status: status, venue: venue),
           _live(),
           _scorecard(),
           _squads(),

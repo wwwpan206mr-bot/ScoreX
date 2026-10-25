@@ -6,7 +6,7 @@ const source = await readFile(new URL('./worker.js', import.meta.url), 'utf8');
 const { default: worker } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const rows = (start, count) => Array.from({ length: count }, (_, i) => ({ id: `match-${start + i}` }));
 
-async function run(pages, env = {}) {
+async function run(pages, env = {}, path = '/matches') {
   const originalFetch = globalThis.fetch;
   const originalCaches = globalThis.caches;
   const offsets = [];
@@ -20,7 +20,7 @@ async function run(pages, env = {}) {
     return Response.json(payload);
   };
   try {
-    const response = await worker.fetch(new Request('https://scorex.test/matches'),
+    const response = await worker.fetch(new Request('https://scorex.test' + path),
       { CRICAPI_KEY: 'test-only', ...env }, { waitUntil: p => pending.push(p) });
     await Promise.all(pending);
     return { response, body: await response.json(), offsets };
@@ -67,4 +67,33 @@ test('stops if provider ignores offset instead of duplicating matches', async ()
   const result = await run([{ data: rows(0, 25) }, { data: rows(0, 25) }]);
   assert.equal(result.body.data.length, 25);
   assert.equal(result.body.coverage.partial, true);
+});
+
+
+test('live route does not call a paid provider when no delivery source is configured', async () => {
+  const result = await run([], {}, '/live?id=m1');
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.available, false);
+  assert.equal(result.body.data, null);
+  assert.deepEqual(result.offsets, []);
+});
+
+test('live route accepts a verified match-bound normalised feed', async () => {
+  const result = await run([{ data: { matchId: 'm1', inningsId: '2', source: 'Test source',
+    updatedAt: '2026-10-25T18:00:00Z', deliveries: [] } }],
+    { LIVE_FEED_URL: 'https://feed.test/live' }, '/live?id=m1');
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.available, true);
+  assert.equal(result.body.data.matchId, 'm1');
+  assert.match(result.response.headers.get('cache-control'), /max-age=20/);
+});
+
+test('live route rejects a different match and an invalid ID', async () => {
+  const mismatch = await run([{ data: { matchId: 'other', inningsId: '2', source: 'Test source',
+    updatedAt: '2026-10-25T18:00:00Z', deliveries: [] } }],
+    { LIVE_FEED_URL: 'https://feed.test/live' }, '/live?id=m1');
+  assert.equal(mismatch.response.status, 502);
+  const invalid = await run([], {}, '/live?id=../private');
+  assert.equal(invalid.response.status, 400);
+  assert.deepEqual(invalid.offsets, []);
 });
