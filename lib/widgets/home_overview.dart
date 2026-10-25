@@ -33,7 +33,7 @@ class HomeOverview extends StatelessWidget {
         style: const TextStyle(color: Color(0xFFD5E7DA), fontSize: 12)),
       const SizedBox(height: 22),
       Wrap(spacing: 8, runSpacing: 8, children: [
-        _stat(Icons.bolt_rounded, loading ? '— live' : '$live live', 'Live'),
+        _stat(Icons.bolt_rounded, loading ? '— live' : stale ? '$live previously live' : '$live live', 'Live'),
         _stat(Icons.calendar_today_rounded, loading ? '— upcoming' : '$upcoming upcoming', 'Upcoming'),
         _stat(Icons.star_rounded, '$following following', 'Following'),
       ]),
@@ -46,7 +46,7 @@ class HomeOverview extends StatelessWidget {
       child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 16, color: const Color(0xFFFFC857)), const SizedBox(width: 7),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+          Flexible(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
         ]),
       ),
     ),
