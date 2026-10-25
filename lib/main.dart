@@ -238,7 +238,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           children: [
             ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.asset('assets/branding/scorex_logo.png', width: 38, height: 38, fit: BoxFit.cover)),
             SizedBox(width: 9),
-            Text('ScoreX', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: .4)),
+            Expanded(child: Text('ScoreX', maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: .4))),
           ],
         ),
         actions: [

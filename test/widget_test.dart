@@ -82,17 +82,24 @@ void main() {
   });
 
   testWidgets('empty live filter explains feed coverage and restores all matches', (tester) async {
+    tester.view.reset();
+    tester.view.physicalSize = const Size(400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     // This screen renders the real bundled logo; retain the engine asset loader.
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMessageHandler('flutter/assets', null);
     await tester.pumpWidget(MaterialApp(home: ScoreHomePage(
       darkMode: true, onThemeChanged: (_) {}, matchRepository: _ResultsOnlyRepository(),
     )));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(ChoiceChip).at(1));
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(ChoiceChip).at(1));
     await tester.pumpAndSettle();
     expect(find.text('No live matches in this feed'), findsOneWidget);
     expect(find.text('Completed fixture'), findsNothing);
     await tester.ensureVisible(find.text('View all matches'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('View all matches'));
     await tester.pumpAndSettle();
     expect(find.text('Completed fixture'), findsOneWidget);
