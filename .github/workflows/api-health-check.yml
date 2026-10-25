@@ -1,0 +1,66 @@
+name: ScoreX API Verification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/api-health-check.yml']
+permissions:
+  contents: read
+jobs:
+  verify-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify deployed cricket API
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request, urllib.parse
+          base = (os.environ.get('API_BASE_URL') or 'https://scorex-cricket-api.www-pan206mr.workers.dev').rstrip('/')
+          failures = []
+          report = []
+          def check(path, validate):
+              started = time.monotonic()
+              try:
+                  req = urllib.request.Request(base + path, headers={'Accept': 'application/json', 'User-Agent': 'ScoreX-API-Verification'})
+                  with urllib.request.urlopen(req, timeout=25) as response:
+                      payload = json.load(response)
+                      validate(payload)
+                      report.append(f"PASS {path.split('?')[0]}: HTTP {response.status}, {time.monotonic()-started:.2f}s, cache={response.headers.get('Cache-Control')}")
+                      return payload
+              except Exception as error:
+                  failures.append(path)
+                  report.append(f"FAIL {path.split('?')[0]}: {type(error).__name__}: {error}")
+                  return None
+          def health(p):
+              assert p.get('status') == 'ok', 'Health status is not ok'
+              assert p.get('configured') is True, 'Worker API secret is not configured'
+          def matches(p):
+              assert isinstance(p.get('data'), list), 'Expected data array'
+              assert all(isinstance(m, dict) and m.get('id') for m in p['data']), 'Invalid match IDs'
+          check('/health', health)
+          listing = check('/matches', matches)
+          if listing is not None:
+              data = listing['data']
+              report.append(f"Matches returned: {len(data)}; proxy updatedAt: {listing.get('updatedAt', 'not supplied')}")
+              for m in data[:3]:
+                  report.append(f"Sample: {m.get('name')} | {m.get('status')} | score={json.dumps(m.get('score', []))}")
+              if data:
+                  mid = str(data[0]['id'])
+                  def detail(p):
+                      assert isinstance(p.get('data'), dict), 'Expected match detail object'
+                      assert str(p['data'].get('id')) == mid, 'Wrong match ID in details'
+                  check('/match?' + urllib.parse.urlencode({'id': mid}), detail)
+              else:
+                  report.append('SKIP /match: provider returned no matches; detailed endpoint remains unverified.')
+          output = '\n'.join(report)
+          print(output)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write('### ScoreX deployed API verification\n\n')
+              f.write('Request success does not prove that upstream live scores are fresh.\n\n')
+              f.write('```text\n' + output + '\n```\n')
+          if failures:
+              raise SystemExit(1)
+          PY
