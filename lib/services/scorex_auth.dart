@@ -23,6 +23,7 @@ class ScoreXAuth extends ChangeNotifier {
   String? get uid => user?.uid ?? _localUid;
   bool get guest => user?.isAnonymous ?? (_localUid != null);
   bool get signedIn => uid != null;
+  bool get deviceGuest => user == null && _localUid != null;
   bool get googleAvailable => configured && _webClientId?.isNotEmpty == true;
   String get name => guest ? 'Cricket fan' : user?.displayName ?? 'ScoreX member';
 
@@ -42,7 +43,7 @@ class ScoreXAuth extends ChangeNotifier {
         _webClientId = config['googleWebClientId'] as String?;
         _auth = FirebaseAuth.instance;
         configured = true;
-        await _clearLocal();
+        if (user != null) await _clearLocal();
         _subscription = _auth!.userChanges().listen((_) => notifyListeners());
       }
     } catch (_) {
@@ -58,6 +59,9 @@ class ScoreXAuth extends ChangeNotifier {
     try { await action(); }
     on FirebaseAuthException catch (e) {
       error = switch (e.code) {
+        'operation-not-allowed' => 'This sign-in provider is disabled. Enable it in Firebase Authentication, or continue as a guest.',
+        'admin-restricted-operation' => 'Firebase has restricted account creation. Enable this provider and check Authentication user actions, or continue as a guest.',
+        'account-exists-with-different-credential' => 'Sign in with your existing account method first.',
         'invalid-credential' => 'Email or password is incorrect.',
         'email-already-in-use' => 'This email already has an account. Please sign in.',
         'weak-password' => 'Use a stronger password with at least 6 characters.',
@@ -68,18 +72,36 @@ class ScoreXAuth extends ChangeNotifier {
         'credential-already-in-use' => 'This Google account is already registered. Use Sign in.',
         _ => 'Unable to complete this request (${e.code}).',
       };
+    } on PlatformException catch (e) {
+      final detail = '${e.message ?? ''} ${e.details ?? ''}';
+      error = e.code == 'network_error'
+          ? 'Google sign-in could not connect. Check your internet connection.'
+          : detail.contains('10:') || detail.contains('DEVELOPER_ERROR')
+              ? 'Google sign-in setup mismatch. Register this APK signing SHA-1 in Firebase and check its Android package and Web client ID.'
+              : 'Google sign-in failed (${e.code}). Check the Google provider and this build’s signing SHA-1 in Firebase. You can continue as a guest.';
     } catch (_) { error = 'Unable to complete this request. Please try again.'; }
     finally { busy = false; notifyListeners(); }
   }
 
+  Future<void> _enterDeviceGuest() async {
+    final prefs = await SharedPreferences.getInstance();
+    _localUid ??= 'device_guest_' + List.generate(16, (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+    await prefs.setString('scorex_device_guest_uid', _localUid!);
+  }
+
   Future<void> enterGuest() => run(() async {
+    if (user != null || _localUid != null) return;
     if (configured) {
-      if (_auth!.currentUser == null) await _auth!.signInAnonymously();
-    } else {
-      final prefs = await SharedPreferences.getInstance();
-      _localUid ??= 'device_guest_' + List.generate(16, (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')).join();
-      await prefs.setString('scorex_device_guest_uid', _localUid!);
+      try {
+        await _auth!.signInAnonymously().timeout(const Duration(seconds: 12));
+        await _clearLocal();
+        return;
+      } catch (_) {
+        // Public scores remain accessible without a cloud account.
+        // This local identity never grants authenticated Firebase permissions.
+      }
     }
+    await _enterDeviceGuest();
   });
 
   Future<void> email(String email, String password, {required bool register, String name = ''}) => run(() async {

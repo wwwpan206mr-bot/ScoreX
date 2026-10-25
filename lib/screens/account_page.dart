@@ -102,7 +102,7 @@ class _ScoreXAccountPageState extends State<ScoreXAccountPage> {
                 Clipboard.setData(ClipboardData(text: auth.uid!));
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('UID copied')));
               }, icon: const Icon(Icons.copy, size: 16), label: const Text('Copy UID')),
-              if (!auth.configured) const Text('Device-only guest ID. It is not a cloud account and can be lost if app data is cleared.',
+              if (auth.deviceGuest) const Text('Device-only guest ID. It is not a cloud account and can be lost if app data is cleared.',
                 style: TextStyle(fontSize: 12)),
             ]))),
         ],
@@ -147,7 +147,7 @@ class _ScoreXAccountPageState extends State<ScoreXAccountPage> {
           OutlinedButton.icon(onPressed: !auth.googleAvailable || auth.busy ? null : () => auth.google(upgrade: _register),
             icon: const Icon(Icons.account_circle_outlined), label: Text(_register && auth.guest ? 'Upgrade guest with Google' : 'Continue with Google')),
           if (auth.configured && !auth.googleAvailable) const Text('Google sign-in is not available yet. Use email or continue as a guest.'),
-          if (auth.guest) const Text('Creating a new account upgrades a cloud guest with the same UID. Signing into an existing account uses that account’s UID.'),
+          if (auth.guest && !auth.deviceGuest) const Text('Creating a new account upgrades a cloud guest with the same UID. Signing into an existing account uses that account’s UID.'),
           const SizedBox(height: 8),
           if (!auth.signedIn) TextButton.icon(onPressed: auth.busy ? null : auth.enterGuest,
             icon: const Icon(Icons.person_outline), label: const Text('Continue as guest')),
