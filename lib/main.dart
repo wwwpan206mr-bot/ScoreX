@@ -230,6 +230,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           : RefreshIndicator(
         onRefresh: () async { await _loadPreferences(); await _loadMatches(); },
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
           children: [
             _heroCard(context),
@@ -238,8 +239,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
               controller: _searchController,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'Search teams, tournaments or matches',
-                prefixIcon: const Icon(Icons.search),
+                hintText: 'Search cricket matches…',
+                prefixIcon: const Icon(Icons.search_rounded, color: scoreXGold),
                 filled: true,
                 fillColor: Theme.of(context).cardTheme.color,
                 border: OutlineInputBorder(
@@ -262,7 +263,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
               children: [
                 Expanded(
                   child: Text(
-                    _navigationIndex == 2 ? 'All cricket matches' : 'Live cricket matches',
+                    _navigationIndex == 2 ? 'All matches' : 'Match spotlight',
                     style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -284,6 +285,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                   .map((item) => ChoiceChip(
                         label: Text(item),
                         selected: _filter == item,
+                        showCheckmark: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                         onSelected: (_) => setState(() => _filter = item),
                         selectedColor: scoreXGold,
                         labelStyle: TextStyle(
@@ -465,35 +469,50 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   }
 
   Widget _heroCard(BuildContext context) {
+    final live = _matches.where((m) => m.status == MatchStatus.live).length;
+    final upcoming = _matches.where((m) => m.status == MatchStatus.upcoming).length;
     return Container(
-      padding: const EdgeInsets.all(21),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(26),
         gradient: const LinearGradient(
-          colors: [Color(0xFF15533E), Color(0xFF09271D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+          colors: [Color(0xFF1B6049), Color(0xFF0A2B23)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight),
         border: Border.all(color: const Color(0x66FFC857)),
+        boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 24, offset: Offset(0, 8))],
       ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.bolt, color: scoreXGold, size: 17),
-              SizedBox(width: 5),
-              Text('CRICKET, AT A GLANCE', style: TextStyle(color: scoreXGold, fontSize: 11, letterSpacing: 1.7, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          SizedBox(height: 12),
-          Text('Every run.\nEvery wicket.', style: TextStyle(fontSize: 29, height: 1.12, fontWeight: FontWeight.w900, color: Colors.white)),
-          SizedBox(height: 10),
-          Text('Live scores, match centre and full scorecards — all in one place.', style: TextStyle(color: Color(0xFFD2E4D9), height: 1.4)),
-        ],
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Icon(Icons.sports_cricket_rounded, color: scoreXGold, size: 18),
+          SizedBox(width: 8),
+          Expanded(child: Text('THE CRICKET EDIT', style: TextStyle(
+            color: scoreXGold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w800))),
+        ]),
+        const SizedBox(height: 16),
+        const Text('Your game.\nCloser than ever.', style: TextStyle(
+          fontSize: 28, height: 1.12, fontWeight: FontWeight.w900, color: Colors.white)),
+        const SizedBox(height: 10),
+        const Text('Scores, fixtures & every match that matters.',
+          style: TextStyle(color: Color(0xFFCCE5D9), fontSize: 12, height: 1.5)),
+        const SizedBox(height: 20),
+        Wrap(spacing: 10, runSpacing: 8, children: [
+          _overviewPill(Icons.bolt_rounded, _loadingMatches || _matchError != null ? 'Live • —' : '$live live'),
+          _overviewPill(Icons.event_outlined, _loadingMatches || _matchError != null ? 'Upcoming • —' : '$upcoming upcoming'),
+        ]),
+      ]),
     );
   }
+
+  Widget _overviewPill(IconData icon, String text) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+    decoration: BoxDecoration(
+      color: const Color(0x22FFFFFF), borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0x22FFFFFF))),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, color: scoreXGold, size: 15), const SizedBox(width: 6),
+      Text(text, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+    ]),
+  );
 
   Widget _emptyState(
     BuildContext context, {
