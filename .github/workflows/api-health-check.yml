@@ -8,7 +8,8 @@ permissions:
   contents: read
 jobs:
   verify-api:
-    runs-on: ubuntu-latest
+    # Keep the OS stable during the ubuntu-latest 26.04 migration (runner-images#14748).
+    runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
       - name: Verify deployed cricket API
