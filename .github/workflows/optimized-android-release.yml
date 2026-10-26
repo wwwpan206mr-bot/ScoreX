@@ -97,7 +97,7 @@ jobs:
             echo '### ScoreX APK certificate fingerprints'
             echo 'These fingerprints belong to the ARM64 APK in this workflow run.'
             echo 'Register its SHA-1 and SHA-256 in Firebase for this APK.'
-            echo 'Current builds still need a stable production signing key; a later run may use a different certificate.'
+            echo 'Signing is stable only when the repository keystore secrets are configured.'
             echo '```text'
             cat scorex-signing-fingerprints.txt
             echo '```'

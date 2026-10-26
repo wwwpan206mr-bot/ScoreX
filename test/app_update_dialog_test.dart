@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scorex/services/update_manifest.dart';
+import 'package:scorex/services/app_update_service.dart';
 import 'package:scorex/widgets/app_update_dialog.dart';
 
 void main() {
@@ -53,4 +54,19 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
   });
+  testWidgets('startup checks updates before the sign-in screen is completed', (tester) async {
+    var checks = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(AppUpdateService.channel, (call) async {
+      if (call.method == 'platform') return {'distribution': 'play'};
+      if (call.method == 'checkPlay') { checks++; return {'available': false}; }
+      return null;
+    });
+    await tester.pumpWidget(const MaterialApp(home: AppUpdateHost(child: Scaffold(body: Text('Sign in')))));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(checks, 1);
+    await tester.pumpWidget(const SizedBox());
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(AppUpdateService.channel, null);
+  });
+
 }

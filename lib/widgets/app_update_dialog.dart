@@ -52,11 +52,16 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> with WidgetsBindingOb
     _querying = true;
     try {
       final data = await widget.channel.invokeMapMethod<String, dynamic>('progress');
-      if (!mounted || data == null || data['url'] != widget.update.url) return;
+      if (!mounted || data == null) return;
+      if (data['state'] == 'idle') {
+        if (_state == 'downloading' || _state == 'paused') setState(() { _state = 'idle'; _authorized = false; _progress = null; });
+        return;
+      }
+      if (data['url'] != widget.update.url) return;
       final state = data['state'] as String? ?? 'idle';
       final received = (data['received'] as num?)?.toDouble() ?? 0;
       final total = (data['total'] as num?)?.toDouble() ?? 0;
-      final progress = total > 0 ? (received / total).clamp(0.0, 1.0) : null;
+      final progress = total > 0 ? (received / total).clamp(0.0, 1.0).toDouble() : null;
       if (_state != 'permission' && _state != 'installer' && (_state != state || _progress != progress)) {
         setState(() { _state = state; _progress = progress;
           if (state == 'failed') _error = 'Download failed. Check available storage and your connection, then retry.';
@@ -71,6 +76,7 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> with WidgetsBindingOb
   }
 
   Future<void> _download() async {
+    if (_busy) return;
     setState(() { _busy = true; _error = null; });
     try {
       await widget.channel.invokeMethod('download', widget.update.arguments);

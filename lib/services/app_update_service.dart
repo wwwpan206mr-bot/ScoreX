@@ -79,3 +79,34 @@ class AppUpdateService {
   static void _message(BuildContext context, String text) =>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 }
+
+/// Sits above authentication so an update check never depends on login.
+class AppUpdateHost extends StatefulWidget {
+  const AppUpdateHost({super.key, required this.child});
+  final Widget child;
+  @override
+  State<AppUpdateHost> createState() => _AppUpdateHostState();
+}
+
+class _AppUpdateHostState extends State<AppUpdateHost> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppUpdateService.check(context, silent: true);
+    });
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _resume();
+  }
+  Future<void> _resume() async {
+    await AppUpdateService.resumePending(context);
+    if (mounted) await AppUpdateService.check(context, silent: true);
+  }
+  @override
+  void dispose() { WidgetsBinding.instance.removeObserver(this); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => widget.child;
+}

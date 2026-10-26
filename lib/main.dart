@@ -68,10 +68,10 @@ class _ScoreXAppState extends State<ScoreXApp> {
       theme: ScoreXTheme.build(Brightness.light),
       darkTheme: ScoreXTheme.build(Brightness.dark),
       themeAnimationDuration: const Duration(milliseconds: 220),
-      home: ScoreXAuthGate(child: ScoreHomePage(
+      home: AppUpdateHost(child: ScoreXAuthGate(child: ScoreHomePage(
         darkMode: _darkMode,
         onThemeChanged: _setTheme,
-      )),
+      ))),
     );
   }
 }
@@ -121,12 +121,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
       seconds: _refreshFailures > 0 ? (_refreshFailures > 2 ? 60 : 30)
           : _matches.any((m) => m.status == MatchStatus.live) ? 10 : 30));
     _bootstrap();
-    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) AppUpdateService.check(context, silent: true); });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(AppUpdateService.resumePending(context));
     if (state == AppLifecycleState.resumed && !_matchCentreOpen) {
       _refreshLoop.start();
     } else {

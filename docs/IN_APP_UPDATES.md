@@ -2,7 +2,7 @@
 
 ## What is implemented
 
-GitHub builds fetch `https://github.com/wwwpan206mr-bot/ScoreX/releases/latest/download/update.json` asynchronously on opening Home. Settings → App Updates also checks manually. The app compares the **actual Android versionCode**, including Flutter's ABI split offset, and chooses the first matching device ABI. A plain source commit never advertises an update.
+GitHub builds fetch `https://github.com/wwwpan206mr-bot/ScoreX/releases/latest/download/update.json` asynchronously on app launch, before authentication. Settings → App Updates also checks manually. The app compares the **actual Android versionCode**, including Flutter's ABI split offset, and chooses the first matching device ABI. A plain source commit never advertises an update.
 
 Update now starts Android DownloadManager. Progress, retry and cancel appear in the app. Downloads continue when the app is minimized or the Flutter process is removed, subject to Android/network conditions. Completed downloads are recovered on app launch or resume. An active download opens installation automatically when complete while its prompt is visible; a restored/background download requires tapping Install update.
 
