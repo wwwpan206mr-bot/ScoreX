@@ -6,16 +6,15 @@ on:
         description: Optimized Android Release run to test (blank = latest successful run)
         required: false
         type: string
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/android-startup-check.yml'
-      - 'scripts/check_android_startup.sh'
+  workflow_run:
+    workflows: ['Optimized Android Release']
+    types: [completed]
 permissions:
   contents: read
   actions: read
 jobs:
   launch:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -23,7 +22,7 @@ jobs:
       - name: Download built release APK
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_RUN: ${{ inputs.run_id }}
+          REQUESTED_RUN: ${{ inputs.run_id || github.event.workflow_run.id }}
         run: |
           run_id="$REQUESTED_RUN"
           if [ -z "$run_id" ]; then

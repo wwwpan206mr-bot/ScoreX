@@ -13,7 +13,7 @@ for attempt in 1 2 3; do
   adb pull /sdcard/scorex-startup.png startup-report/screen.png > /dev/null
   if ! adb shell pidof "$app_package" > startup-report/pid.txt; then
     cat startup-report/launch.txt
-    rg -n -A 45 -B 8 'FATAL EXCEPTION|Fatal signal|AndroidRuntime|Could not|flutter.*ERROR|Dart Error' startup-report/logcat.txt || true
+    grep -n -E -A 45 -B 8 'FATAL EXCEPTION|Fatal signal|AndroidRuntime|Could not|flutter.*ERROR|Dart Error' startup-report/logcat.txt || true
     echo 'ScoreX exited during startup.'
     exit 1
   fi
