@@ -14,7 +14,7 @@ def create(apk_dir, tag, repository, aapt, notes, force=False):
     assets = {}
     version_name = None
     for abi in ['arm64-v8a', 'armeabi-v7a', 'x86_64']:
-        path = Path(apk_dir) / f'app-github-{abi}-release.apk'
+        path = Path(apk_dir) / f'app-{abi}-github-release.apk'
         content = path.read_bytes()
         if not 0 < len(content) <= 250 * 1024 * 1024:
             raise ValueError('APK size is out of range')

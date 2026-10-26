@@ -8,7 +8,7 @@ class ManifestTest(unittest.TestCase):
     def test_hash_size_and_actual_apk_version_code(self):
         with tempfile.TemporaryDirectory() as directory:
             for abi in ['arm64-v8a', 'armeabi-v7a', 'x86_64']:
-                Path(directory, f'app-github-{abi}-release.apk').write_bytes(b'abc')
+                Path(directory, f'app-{abi}-github-release.apk').write_bytes(b'abc')
             with patch('subprocess.check_output', return_value="package: name='com.scorex.app.scorex' versionCode='2012' versionName='1.0.8'"):
                 manifest = create(directory, 'github-v1.0.8-build12', 'wwwpan206mr-bot/ScoreX', 'aapt', 'Changes')
             asset = manifest['assets']['arm64-v8a']

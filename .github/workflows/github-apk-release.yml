@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
-          for apk in build/app/outputs/flutter-apk/app-github-*-release.apk; do
+          for apk in build/app/outputs/flutter-apk/app-*-github-release.apk; do
             "$build_tools/apksigner" verify "$apk"
           done
           python3 - <<'PY'
@@ -125,7 +125,7 @@ jobs:
             echo 'This release tag already exists. Increase pubspec version/build before publishing.'
             exit 1
           fi
-          gh release create "$RELEASE_TAG" build/app/outputs/flutter-apk/app-github-*-release.apk update.json --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title "ScoreX $RELEASE_TAG" --notes-file release-notes.txt
+          gh release create "$RELEASE_TAG" build/app/outputs/flutter-apk/app-*-github-release.apk update.json --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title "ScoreX $RELEASE_TAG" --notes-file release-notes.txt
           gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
           echo "Published signed update: $RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
       - name: Remove signing key
