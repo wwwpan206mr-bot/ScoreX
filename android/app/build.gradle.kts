@@ -29,6 +29,13 @@ android {
         versionName = flutter.versionName
     }
 
+    buildFeatures { buildConfig = true }
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("github") { dimension = "distribution" }
+        create("play") { dimension = "distribution" }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -51,3 +58,11 @@ flutter {
     source = "../.."
 }
 
+
+
+// Native implementations are separate source sets for each distribution.
+dependencies {
+    add("githubImplementation", "androidx.core:core-ktx:1.17.0")
+    add("playImplementation", "com.google.android.play:app-update-ktx:2.1.0")
+    add("testGithubImplementation", "junit:junit:4.13.2")
+}

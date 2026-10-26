@@ -33,7 +33,7 @@ jobs:
             run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/optimized-android-release.yml/runs?status=success&per_page=1" --jq '.workflow_runs[0].id')
           fi
           gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name scorex-optimized-android-release --dir release
-          find release -name 'app-x86_64-release.apk' -print
+          find release -name 'app-github-x86_64-release.apk' -print
           echo "Tested release run: $run_id" >> "$GITHUB_STEP_SUMMARY"
       - name: Enable KVM
         run: |
@@ -48,7 +48,7 @@ jobs:
           arch: x86_64
           profile: pixel_7_pro
           disable-animations: true
-          script: bash scripts/check_android_startup.sh "$(find release -name app-x86_64-release.apk -print -quit)"
+          script: bash scripts/check_android_startup.sh "$(find release -name app-github-x86_64-release.apk -print -quit)"
       - name: Upload startup logs and screenshot
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -56,3 +56,4 @@ jobs:
           name: scorex-android-startup-report
           path: startup-report/
           if-no-files-found: warn
+

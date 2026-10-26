@@ -126,6 +126,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(AppUpdateService.resumePending(context));
     if (state == AppLifecycleState.resumed && !_matchCentreOpen) {
       _refreshLoop.start();
     } else {

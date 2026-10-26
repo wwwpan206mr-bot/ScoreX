@@ -13,6 +13,7 @@ on:
       - 'pubspec.yaml'
       - '.github/workflows/android-build.yml'
       - 'cloudflare/**'
+      - 'scripts/**'
 
 permissions:
   contents: read
@@ -75,24 +76,32 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - name: Test cricket proxy pagination
-        run: node --test cloudflare/worker.test.mjs
+        run: |
+          node --test cloudflare/worker.test.mjs
+          python3 -m unittest discover -s scripts -p '*_test.py' 
       - name: Run tests
         run: flutter test
       - name: Build debug APK
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
-        run: flutter build apk --debug --dart-define=API_BASE_URL="${API_BASE_URL}"
+        run: flutter build apk --flavor github --debug --dart-define=API_BASE_URL="${API_BASE_URL}"
+      - name: Test native update validation
+        working-directory: android
+        run: ./gradlew :app:testGithubDebugUnitTest
       - name: Build release-mode Android App Bundle
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
-        run: flutter build appbundle --release --dart-define=API_BASE_URL="${API_BASE_URL}"
+        run: flutter build appbundle --flavor play --release --dart-define=API_BASE_URL="${API_BASE_URL}"
+      - name: Verify Play manifest omits APK install permission
+        run: python3 scripts/check_play_update_manifest.py
       - name: Upload Android artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scorex-android-builds
           path: |
-            build/app/outputs/flutter-apk/app-debug.apk
-            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/app-github-debug.apk
+            build/app/outputs/bundle/playRelease/app-play-release.aab
           if-no-files-found: error
           retention-days: 7
+
 
