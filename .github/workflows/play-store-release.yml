@@ -2,7 +2,7 @@ name: Play Store Signed Release
 on:
   workflow_dispatch:
 
-# GitHub manages the hosted runner version; do not pin obsolete runner v2.328.0.
+# GitHub manages and updates the hosted runner software.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
@@ -18,12 +18,12 @@ jobs:
       SCOREX_KEYSTORE_PATH: ${{ github.workspace }}/android/app/scorex-upload.jks
       API_BASE_URL: ${{ vars.API_BASE_URL }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
           cache: true
@@ -98,7 +98,7 @@ jobs:
       - name: Show file sizes
         run: du -h build/app/outputs/flutter-apk/*.apk build/app/outputs/bundle/release/*.aab
       - name: Upload release APKs and AAB
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: scorex-play-signed-release
           path: |
