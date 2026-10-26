@@ -99,7 +99,9 @@ void main() {
     ))));
     expect(find.text('34 runs needed in 24 balls'), findsOneWidget);
     expect(find.text('W'), findsOneWidget);
-    expect(find.text('4'), findsOneWidget);
+    // The latest boundary appears in both the score panel and delivery history.
+    expect(find.text('LAST BALL'), findsOneWidget);
+    expect(find.text('4'), findsNWidgets(2));
     await tester.scrollUntilVisible(find.text('Estimated win probability'), 150,
       scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
