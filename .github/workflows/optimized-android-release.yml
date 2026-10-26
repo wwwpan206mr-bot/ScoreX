@@ -10,6 +10,10 @@ on:
       - 'android/**'
       - '.github/workflows/optimized-android-release.yml'
 
+# GitHub manages the hosted runner version; do not pin obsolete runner v2.328.0.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   build:
     runs-on: ubuntu-24.04
