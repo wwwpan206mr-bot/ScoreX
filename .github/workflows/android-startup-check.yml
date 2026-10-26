@@ -1,0 +1,55 @@
+name: Android Release Startup Check
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Optimized Android Release run to test (blank = latest successful run)
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-startup-check.yml'
+      - 'scripts/check_android_startup.sh'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  launch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Download built release APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN: ${{ inputs.run_id }}
+        run: |
+          run_id="$REQUESTED_RUN"
+          if [ -z "$run_id" ]; then
+            run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/optimized-android-release.yml/runs?status=success&per_page=1" --jq '.workflow_runs[0].id')
+          fi
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name scorex-optimized-android-release --dir release
+          find release -name 'app-x86_64-release.apk' -print
+          echo "Tested release run: $run_id" >> "$GITHUB_STEP_SUMMARY"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Launch real release APK on Android 35
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          disable-animations: true
+          script: bash scripts/check_android_startup.sh "$(find release -name app-x86_64-release.apk -print -quit)"
+      - name: Upload startup logs and screenshot
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: scorex-android-startup-report
+          path: startup-report/
+          if-no-files-found: warn
