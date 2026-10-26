@@ -12,6 +12,8 @@ class CricketMatch {
     this.startTime,
     this.teamA,
     this.teamB,
+    this.teamAImage,
+    this.teamBImage,
     this.teamAScore,
     this.teamBScore,
     this.overs,
@@ -26,6 +28,8 @@ class CricketMatch {
   final DateTime? startTime;
   final String? teamA;
   final String? teamB;
+  final String? teamAImage;
+  final String? teamBImage;
   final String? teamAScore;
   final String? teamBScore;
   final String? overs;
@@ -34,7 +38,7 @@ class CricketMatch {
   Map<String, dynamic> toJson() => {
     'id': id, 'title': title, 'status': status.name, 'series': series,
     'venue': venue, 'startTime': startTime?.toUtc().toIso8601String(),
-    'teamA': teamA, 'teamB': teamB, 'teamAScore': teamAScore,
+    'teamA': teamA, 'teamB': teamB, 'teamAImage': teamAImage, 'teamBImage': teamBImage, 'teamAScore': teamAScore,
     'teamBScore': teamBScore, 'overs': overs, 'result': result,
   };
 
@@ -67,6 +71,8 @@ class CricketMatch {
       startTime: DateTime.tryParse((json['startTime'] ?? json['date'] ?? '').toString()),
       teamA: json['teamA']?.toString(),
       teamB: json['teamB']?.toString(),
+      teamAImage: json['teamAImage']?.toString(),
+      teamBImage: json['teamBImage']?.toString(),
       teamAScore: json['teamAScore']?.toString(),
       teamBScore: json['teamBScore']?.toString(),
       overs: json['overs']?.toString(),
@@ -74,3 +80,4 @@ class CricketMatch {
     );
   }
 }
+

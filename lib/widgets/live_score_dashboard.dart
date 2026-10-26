@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'scorex_ads.dart';
+import 'animated_score.dart';
 import '../theme/scorex_theme.dart';
 import '../models/ball_event.dart';
 import '../models/innings_summary.dart';
@@ -27,7 +28,7 @@ class LiveScoreDashboard extends StatelessWidget {
   final String? status;
   final String? venue;
 
-  Widget _card(Widget child) => Card(child: Padding(padding: const EdgeInsets.all(20), child: child));
+  Widget _card(Widget child) => Card(child: Padding(padding: const EdgeInsets.all(16), child: child));
 
   @override
   Widget build(BuildContext context) {
@@ -48,20 +49,19 @@ class LiveScoreDashboard extends StatelessWidget {
       if (completed && status != null) _card(Text(status!, style: const TextStyle(fontWeight: FontWeight.bold))),
       if (data != null) Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: scheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: scheme.primary.withValues(alpha: .35)),
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [scheme.primary.withValues(alpha: .12), scheme.surface]),
+          // A flat score surface avoids expensive decorative layers while updating.
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(battingTeam ?? 'Current innings', style: TextStyle(color: mint, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Wrap(spacing: 24, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${data.runs}/${data.wickets}', style: ScoreXTheme.scoreStyle.copyWith(fontSize: 48, color: scheme.onSurface)),
+            AnimatedScore('${data.runs}/${data.wickets}', style: ScoreXTheme.scoreStyle.copyWith(fontSize: 44, color: mint)),
             Text('${data.overs} overs', style: TextStyle(color: scheme.onSurfaceVariant)),
           ]),
           if (recent.isNotEmpty && !stale && !completed)
@@ -70,7 +70,7 @@ class LiveScoreDashboard extends StatelessWidget {
               child: Column(children: [
                 Text('LAST BALL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1, color: scheme.onSurfaceVariant)),
                 const SizedBox(height: 4),
-                Text(recent.last.marker, style: ScoreXTheme.scoreStyle.copyWith(fontSize: 32,
+                AnimatedScore(recent.last.marker, style: ScoreXTheme.scoreStyle.copyWith(fontSize: 32,
                   color: recent.last.isWicket ? const Color(0xFFDA4555) : scheme.primary)),
               ])),
         ]),
@@ -184,3 +184,4 @@ class LiveScoreDashboard extends StatelessWidget {
       )),
     ]));
 }
+

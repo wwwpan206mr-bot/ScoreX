@@ -69,10 +69,10 @@ class MatchFeedNotice extends StatelessWidget {
           color: stale ? scheme.secondary : scheme.primary),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(stale ? 'Saved scores • updates delayed' : 'Auto refresh every 30s',
+          Text(stale ? 'Saved scores • updates delayed' : 'Automatic score updates',
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: scheme.onSurface)),
           if (stamp != null) Text('Last received $stamp', style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
-          if (error != null && stale) Text('Check your connection or try again.',
+          if (error != null && stale) Text('Reconnecting automatically when online.',
             style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
         ])),
         IconButton(tooltip: 'Refresh scores', onPressed: refreshing ? null : onRefresh,
@@ -99,3 +99,4 @@ class MatchLoadingCards extends StatelessWidget {
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .08),
       borderRadius: BorderRadius.circular(8)));
 }
+

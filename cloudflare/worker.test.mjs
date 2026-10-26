@@ -97,3 +97,19 @@ test('live route rejects a different match and an invalid ID', async () => {
   assert.equal(invalid.response.status, 400);
   assert.deepEqual(invalid.offsets, []);
 });
+
+
+test('cache duration is quota-safe by default and configurable within bounds', async () => {
+  const normal = await run([{ data: [] }]);
+  assert.match(normal.response.headers.get('cache-control'), /max-age=60/);
+  const fast = await run([{ data: [] }], { MATCH_CACHE_SECONDS: '10' });
+  assert.match(fast.response.headers.get('cache-control'), /max-age=10,/);
+  const bounded = await run([{ data: [] }], { MATCH_CACHE_SECONDS: '0' });
+  assert.match(bounded.response.headers.get('cache-control'), /max-age=10,/);
+});
+
+test('transient provider failures are not cached on the device', async () => {
+  const failed = await run([new Error('offline')]);
+  assert.equal(failed.response.status, 502);
+  assert.equal(failed.response.headers.get('cache-control'), 'no-store');
+});

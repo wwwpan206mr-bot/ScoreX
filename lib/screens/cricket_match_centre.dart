@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/animated_score.dart';
 import '../widgets/scorex_ads.dart';
 import '../models/ball_event.dart';
 import '../models/innings_summary.dart';
@@ -61,7 +62,10 @@ class CricketMatchCentre extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-          actions: [IconButton(onPressed: refreshing ? null : onRefresh, tooltip: 'Refresh match', icon: const Icon(Icons.refresh_rounded))],
+          actions: [
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Center(child: Text('AUTO',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF82DCCA))))),
+            IconButton(onPressed: refreshing ? null : onRefresh, tooltip: 'Refresh match', icon: const Icon(Icons.refresh_rounded))],
           bottom: TabBar(
             isScrollable: true,
             tabs: [
@@ -77,7 +81,7 @@ class CricketMatchCentre extends StatelessWidget {
         bottomNavigationBar: const SafeArea(
           top: false, child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: ScoreXAdSlot())),
         body: Column(children: [
-          _scoreHeader(),
+          _scoreHeader(context),
           Expanded(child: TabBarView(children: [
           LiveScoreDashboard(innings: innings, deliveries: deliveries, batting: batting, bowling: bowling,
             estimate: estimate, battingTeam: battingTeam, bowlingTeam: bowlingTeam,
@@ -94,23 +98,22 @@ class CricketMatchCentre extends StatelessWidget {
     );
   }
 
-  Widget _scoreHeader() => Container(
+  Widget _scoreHeader(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(18),
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(colors: [Color(0xFF15533E), Color(0xFF09271D)])),
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       for (final score in scores)
         Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(children: [
           Expanded(child: Text(score['team'] ?? 'Innings', maxLines: 2, overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w700))),
           const SizedBox(width: 12),
-          Flexible(child: Text(score['score'] ?? '—', textAlign: TextAlign.right,
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900))),
+          Flexible(child: AnimatedScore(score['score'] ?? '—', textAlign: TextAlign.right,
+            style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 20, fontWeight: FontWeight.w900))),
         ])),
       if (status?.isNotEmpty == true) Padding(padding: const EdgeInsets.only(top: 10),
         child: Text(status!, style: const TextStyle(color: Color(0xFFFFC857), fontWeight: FontWeight.w700))),
-      if (refreshing) const Padding(padding: EdgeInsets.only(top: 8), child: LinearProgressIndicator(minHeight: 2)),
+      // Background polling keeps the received score visible without a loading flash.
       if (refreshError != null) Text('Refresh failed • showing last loaded data',
         style: const TextStyle(color: Color(0xFFFFC857), fontSize: 11)),
     ]),
@@ -255,4 +258,5 @@ class CricketMatchCentre extends StatelessWidget {
     ).toList()));
   }
 }
+
 

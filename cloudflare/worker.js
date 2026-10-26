@@ -1,8 +1,13 @@
 // ScoreX server-side CricAPI proxy. Set CRICAPI_KEY as a Cloudflare Worker secret.
 const ORIGIN = 'https://api.cricapi.com/v1/currentMatches';
 const reply = (body, status = 200) => new Response(JSON.stringify(body), {
-  status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60' }
+  status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
 });
+// Shorter caching is opt-in: lowering it spends more upstream quota.
+function cacheSeconds(value, fallback, minimum, maximum) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? Math.max(minimum, Math.min(maximum, parsed)) : fallback;
+}
 // Adapter for an authorised backend supplying ScoreX's documented live schema.
 // This never calls paid CricAPI Fantasy endpoints under a free subscription.
 async function liveFeed(url, env, ctx) {
@@ -31,7 +36,8 @@ async function liveFeed(url, env, ctx) {
       return reply({ error: 'Delivery source returned invalid data' }, 502);
     }
     const output = reply({ data, available: true });
-    output.headers.set('Cache-Control', 'public, max-age=20, s-maxage=20');
+    const ttl = cacheSeconds(env.LIVE_CACHE_SECONDS, 20, 5, 60);
+    output.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
     ctx.waitUntil(caches.default.put(cacheKey, output.clone()));
     return output;
   } catch (_) {
@@ -59,7 +65,7 @@ export default {
       if (detail) upstream.searchParams.set('id', matchId);
       upstream.searchParams.set('apikey', env.CRICAPI_KEY);
       upstream.searchParams.set('offset', '0');
-      const response = await fetch(upstream, { headers: { Accept: 'application/json' } });
+      const response = await fetch(upstream, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
       const payload = await response.json();
       if (!response.ok || payload.status === 'failure') {
         return reply({ error: 'Cricket data provider request failed', status: response.status }, 502);
@@ -81,7 +87,7 @@ export default {
           if (pagesFetched >= maxPages) { partial = true; break; }
           upstream.searchParams.set('offset', String(offset));
           try {
-            const nextResponse = await fetch(upstream, { headers: { Accept: 'application/json' } });
+            const nextResponse = await fetch(upstream, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
             const next = await nextResponse.json();
             if (!nextResponse.ok || next.status === 'failure' || !Array.isArray(next.data)) {
               partial = true; break;
@@ -99,7 +105,8 @@ export default {
       }
       const output = reply({ data, updatedAt: new Date().toISOString(),
         ...(!detail ? { coverage: { partial, pagesFetched } } : {}) });
-      output.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+      const ttl = cacheSeconds(env.MATCH_CACHE_SECONDS, 60, 10, 300);
+      output.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
       ctx.waitUntil(cache.put(cacheKey, output.clone()));
       return output;
     } catch (_) {
@@ -107,4 +114,5 @@ export default {
     }
   }
 };
+
 

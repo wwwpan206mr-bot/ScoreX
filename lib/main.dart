@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'services/score_refresh_loop.dart';
 import 'services/ads_service.dart';
 import 'widgets/scorex_ads.dart';
 import 'screens/account_page.dart';
@@ -91,7 +93,10 @@ class ScoreHomePage extends StatefulWidget {
 }
 
 class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserver {
-  Timer? _refreshTimer;
+  late final ScoreRefreshLoop _refreshLoop;
+  bool _matchCentreOpen = false;
+  int _refreshFailures = 0;
+  String? _matchSignature;
   bool _fetchingMatches = false;
   DateTime? _lastMatchRefresh;
   static const _favoritesKey = 'scorex_favorite_match_ids';
@@ -112,21 +117,25 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _refreshLoop = ScoreRefreshLoop(load: _loadMatches, interval: () => Duration(
+      seconds: _refreshFailures > 0 ? (_refreshFailures > 2 ? 60 : 30)
+          : _matches.any((m) => m.status == MatchStatus.live) ? 10 : 30));
     _bootstrap();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) _loadMatches();
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) AppUpdateService.check(context, silent: true); });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _loadMatches();
+    if (state == AppLifecycleState.resumed && !_matchCentreOpen) {
+      _refreshLoop.start();
+    } else {
+      _refreshLoop.pause();
+    }
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    _refreshLoop.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
@@ -160,16 +169,24 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
         _showingSavedScores = true;
       });
     }
-    await _loadMatches();
+    if (WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      _refreshLoop.start();
+    }
   }
 
   Future<void> _loadMatches() async {
     if (_fetchingMatches || !mounted) return;
-    setState(() => _fetchingMatches = true);
+    _fetchingMatches = true;
     try {
       final matches = await widget.matchRepository.getMatches();
       if (!mounted) return;
       final now = DateTime.now();
+      final signature = jsonEncode(matches.map((match) => match.toJson()).toList());
+      final changed = signature != _matchSignature || _matchError != null || _showingSavedScores || _loadingMatches;
+      _refreshFailures = 0;
+      if (!changed) return;
+      _matchSignature = signature;
       setState(() {
         _matches = matches;
         _matchError = null;
@@ -180,13 +197,14 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
       await MatchCache.save(matches, now);
     } catch (error) {
       if (!mounted) return;
+      _refreshFailures++;
       setState(() {
         _matchError = error.toString();
         _loadingMatches = false;
         _showingSavedScores = _matches.isNotEmpty;
       });
     } finally {
-      if (mounted) setState(() => _fetchingMatches = false);
+      _fetchingMatches = false;
     }
   }
 
@@ -214,10 +232,18 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     ));
   }
 
-  void _openMatchCentre(String matchId) {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => LiveMatchCentre(matchId: matchId),
+  Future<void> _openMatchCentre(String matchId) async {
+    final initial = _matches.where((match) => match.id == matchId).firstOrNull;
+    _matchCentreOpen = true;
+    _refreshLoop.pause();
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => LiveMatchCentre(matchId: matchId, initialMatch: initial,
+        initialStale: _showingSavedScores),
     ));
+    if (!mounted) return;
+    _matchCentreOpen = false;
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed ||
+        WidgetsBinding.instance.lifecycleState == null) _refreshLoop.start();
   }
 
   List<CricketMatch> get _visibleMatches {
@@ -292,7 +318,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     final shown = _navigationIndex == 0 ? allVisible.take(4).toList() : allVisible;
     return LayoutBuilder(builder: (context, constraints) {
       final columns = constraints.maxWidth >= 760 && MediaQuery.textScalerOf(context).scale(14) <= 20 ? 2 : 1;
-      return RefreshIndicator(onRefresh: _loadMatches, child: CustomScrollView(
+      return RefreshIndicator(onRefresh: _refreshLoop.refreshNow, child: CustomScrollView(
         key: PageStorageKey('match-feed-$_navigationIndex'),
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -321,7 +347,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
               SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
                 for (final item in ['All', 'Live', 'Upcoming', 'Results', 'Following'])
                   Padding(padding: const EdgeInsets.only(right: 8), child: ChoiceChip(
-                    label: Text(item), selected: _filter == item, showCheckmark: false,
+                    label: Text(item == 'Live' ? 'Live (${_matches.where((m) => m.status == MatchStatus.live).length})' : item), selected: _filter == item, showCheckmark: false,
                     labelStyle: TextStyle(fontWeight: FontWeight.w700,
                       color: _filter == item ? (Theme.of(context).brightness == Brightness.dark ? scheme.onPrimary : Colors.white)
                           : scheme.onSurfaceVariant),
@@ -330,12 +356,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
               ])),
               const SizedBox(height: 14),
               MatchFeedNotice(stale: _showingSavedScores, updatedAt: _lastMatchRefresh,
-                refreshing: _fetchingMatches, onRefresh: _loadMatches, error: _matchError),
+                refreshing: _loadingMatches, onRefresh: _refreshLoop.refreshNow, error: _matchError),
               const SizedBox(height: 16),
               if (_loadingMatches) const MatchLoadingCards(),
               if (_matchError != null && _matches.isEmpty) ...[
                 _emptyState(context, icon: Icons.wifi_off_rounded, title: 'Live scores unavailable', message: _matchError!),
-                FilledButton.icon(onPressed: _fetchingMatches ? null : _loadMatches,
+                FilledButton.icon(onPressed: _refreshLoop.refreshNow,
                   icon: const Icon(Icons.refresh), label: const Text('Try again')),
               ],
               if (!_loadingMatches && allVisible.isEmpty && (_matchError == null || _matches.isNotEmpty)) _filteredEmptyState(context),
@@ -348,7 +374,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                 for (var column = 0; column < columns; column++) ...[
                   if (column > 0) const SizedBox(width: 14),
                   Expanded(child: row * columns + column >= shown.length ? const SizedBox.shrink() :
-                    PremiumMatchCard(
+                    Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    if (row == 0 || columns > 1 || shown[row - 1].series != shown[row].series)
+                      Padding(padding: const EdgeInsets.fromLTRB(4, 16, 4, 10), child: Text(
+                        shown[row * columns + column].series ?? 'Cricket matches',
+                        style: Theme.of(context).textTheme.titleMedium)),
+                    RepaintBoundary(child: PremiumMatchCard(
                       key: ValueKey(shown[row * columns + column].id),
                       match: shown[row * columns + column],
                       favorite: _favoriteIds.contains(shown[row * columns + column].id),
@@ -356,6 +387,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                       onFavorite: () => _toggleFavorite(shown[row * columns + column].id),
                       onTap: () => _openMatchCentre(shown[row * columns + column].id),
                     )),
+                    ])),
                 ],
               ]),
             )),
@@ -395,7 +427,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
         TextButton.icon(
           onPressed: () => setState(() { _filter = 'All'; _searchController.clear(); }),
           icon: const Icon(Icons.list_alt), label: const Text('View all matches')),
-        TextButton.icon(onPressed: _fetchingMatches ? null : _loadMatches,
+        TextButton.icon(onPressed: _refreshLoop.refreshNow,
           icon: const Icon(Icons.refresh), label: const Text('Refresh scores')),
       ]),
     ]);
@@ -696,7 +728,7 @@ class _ScoreXSettingsPageState extends State<ScoreXSettingsPage> {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: Text('Scores and delivery coverage depend on the cricket provider. Saved scores show the last received update and are labelled when refresh is delayed. Swipe down to refresh.'),
+              child: Text('Scores and delivery coverage depend on the cricket provider. Saved scores show the last received update and are labelled when refresh is delayed. Updates reconnect automatically when you return to the app.'),
             ),
           ),
         ],
@@ -808,4 +840,5 @@ class _MatchCentrePanel extends StatelessWidget {
     );
   }
 }
+
 

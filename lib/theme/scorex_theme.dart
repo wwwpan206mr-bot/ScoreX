@@ -9,8 +9,8 @@ abstract final class ScoreXTheme {
 
   static ThemeData build(Brightness brightness) {
     final dark = brightness == Brightness.dark;
-    final background = dark ? const Color(0xFF0C111B) : const Color(0xFFF2F4F8);
-    final surface = dark ? const Color(0xFF171F2D) : Colors.white;
+    final background = dark ? const Color(0xFF090F13) : const Color(0xFFF2F4F8);
+    final surface = dark ? const Color(0xFF151F26) : Colors.white;
     final scheme = ColorScheme.fromSeed(seedColor: blue, brightness: brightness).copyWith(
       primary: dark ? mint : blue,
       onPrimary: dark ? const Color(0xFF071C3D) : Colors.white,
@@ -97,3 +97,4 @@ abstract final class ScoreXTheme {
 
   static const scoreStyle = TextStyle(fontFeatures: [FontFeature.tabularFigures()], fontWeight: FontWeight.w900, letterSpacing: -.8);
 }
+

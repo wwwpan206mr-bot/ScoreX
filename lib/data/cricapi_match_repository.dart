@@ -6,6 +6,7 @@ import 'cricapi_parser.dart';
 
 class CricApiMatchRepository implements MatchRepository {
   const CricApiMatchRepository();
+  static final _client = http.Client();
   static const baseUrl = String.fromEnvironment('API_BASE_URL');
 
   @override
@@ -14,14 +15,14 @@ class CricApiMatchRepository implements MatchRepository {
     final endpoint = Uri.parse('${baseUrl.replaceAll(RegExp(r"/+$"), "")}/matches');
     http.Response response;
     try {
-      response = await http.get(endpoint).timeout(const Duration(seconds: 15));
+      response = await _client.get(endpoint, headers: {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));
     } catch (_) {
       // A short retry handles transient mobile DNS and connectivity failures.
       await Future<void>.delayed(const Duration(seconds: 2));
       try {
-        response = await http.get(endpoint).timeout(const Duration(seconds: 15));
+        response = await _client.get(endpoint, headers: {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));
       } catch (_) {
-        throw StateError('Could not connect to live scores. Check your internet connection and try refreshing.');
+        throw StateError('Could not connect to live scores. Reconnecting automatically when online.');
       }
     }
     if (response.statusCode != 200) throw StateError('Cricket service unavailable (HTTP ${response.statusCode}). Please try again.');
@@ -38,14 +39,32 @@ class CricApiMatchRepository implements MatchRepository {
         }
         return null;
       }
+      String? imageForTeam(String? name) {
+        final info = m['teamInfo'];
+        if (info is! List) return null;
+        for (final team in info.whereType<Map>()) {
+          if (team['name'] == name) {
+            final image = Uri.tryParse('${team['img']}');
+            if (image != null && image.scheme == 'https' && image.host.isNotEmpty) return image.toString();
+          }
+        }
+        return null;
+      }
+      final title = (m['name'] ?? 'Cricket match').toString();
+      final titleParts = title.split(',');
+      final series = m['series'] is String ? m['series'] as String
+          : titleParts.length > 2 ? titleParts.skip(2).join(',').trim() : null;
       return CricketMatch(
         id: (m['id'] ?? '').toString(),
-        title: (m['name'] ?? 'Cricket match').toString(),
+        title: title,
+        series: series,
         status: cricApiStatus(m),
         venue: m['venue']?.toString(),
         startTime: cricApiStartTime(m),
         teamA: teams.isNotEmpty ? teams[0].toString() : null,
         teamB: teams.length > 1 ? teams[1].toString() : null,
+        teamAImage: imageForTeam(teams.isNotEmpty ? teams[0].toString() : null),
+        teamBImage: imageForTeam(teams.length > 1 ? teams[1].toString() : null),
         teamAScore: scoreForTeam(teams.isNotEmpty ? teams[0].toString() : null),
         teamBScore: scoreForTeam(teams.length > 1 ? teams[1].toString() : null),
         result: m['status']?.toString(),
@@ -53,4 +72,5 @@ class CricApiMatchRepository implements MatchRepository {
     }).where((m) => status == null || m.status == status).toList();
   }
 }
+
 
