@@ -7,6 +7,9 @@ import 'package:scorex/models/cricket_match.dart';
 import 'package:scorex/services/match_cache.dart';
 import 'package:scorex/theme/scorex_theme.dart';
 import 'package:scorex/widgets/premium_match_card.dart';
+import 'package:scorex/widgets/live_score_dashboard.dart';
+import 'package:scorex/models/ball_event.dart';
+import 'package:scorex/models/innings_summary.dart';
 
 const fixture = CricketMatch(id: 'verified-match', title: 'Long Team A vs Long Team B, 3rd T20I',
   status: MatchStatus.live, teamA: 'A very long cricket team name', teamB: 'Another long cricket team name',
@@ -79,12 +82,26 @@ void main() {
       home: MediaQuery(data: const MediaQueryData(size: Size(320, 1100), textScaler: TextScaler.linear(2), disableAnimations: true),
         child: ScoreHomePage(darkMode: false, onThemeChanged: (_) {}, matchRepository: _RefreshFailureRepository()))));
     await tester.pumpAndSettle();
-    expect(find.text('Cricket,\nin focus.'), findsOneWidget);
+    expect(find.text('Cricket starts here'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -700));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('last ball appears only for a current active innings', (tester) async {
+    for (final state in [(false, false), (true, false), (false, true)]) {
+      await tester.pumpWidget(MaterialApp(theme: ScoreXTheme.build(Brightness.light),
+        home: Scaffold(body: LiveScoreDashboard(
+          innings: const InningsSummary(runs: 100, wickets: 2, legalBalls: 72),
+          deliveries: const [BallEvent(over: 11, ball: 6, runs: 4, batterRuns: 4)],
+          stale: state.$1, completed: state.$2,
+        ))));
+      await tester.pump();
+      expect(find.text('LAST BALL'), !state.$1 && !state.$2 ? findsOneWidget : findsNothing);
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('settings theme switch updates immediately', (tester) async {

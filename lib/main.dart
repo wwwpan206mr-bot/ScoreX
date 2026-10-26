@@ -299,7 +299,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           SliverPadding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), sliver: SliverToBoxAdapter(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (_navigationIndex == 0) ...[
-                _heroCard(context), const SizedBox(height: 24),
+                _heroCard(context), const SizedBox(height: 16),
               ],
               TextField(
                 controller: _searchController, onChanged: (_) => setState(() {}),
@@ -312,7 +312,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
               ),
               const SizedBox(height: 24),
               Row(children: [
-                Expanded(child: Text(_navigationIndex == 0 ? 'Match spotlight' : 'All matches',
+                Expanded(child: Text(_navigationIndex == 0 ? 'Featured matches' : 'All matches',
                   style: Theme.of(context).textTheme.titleLarge)),
                 if (_loadingPreferences) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                 else Text('${allVisible.length} matches', style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
@@ -323,7 +323,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                   Padding(padding: const EdgeInsets.only(right: 8), child: ChoiceChip(
                     label: Text(item), selected: _filter == item, showCheckmark: false,
                     labelStyle: TextStyle(fontWeight: FontWeight.w700,
-                      color: _filter == item ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF17231C) : Colors.white)
+                      color: _filter == item ? (Theme.of(context).brightness == Brightness.dark ? scheme.onPrimary : Colors.white)
                           : scheme.onSurfaceVariant),
                     onSelected: (_) { HapticFeedback.selectionClick(); setState(() => _filter = item); },
                   )),

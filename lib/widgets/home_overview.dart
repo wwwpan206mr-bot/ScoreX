@@ -8,49 +8,43 @@ class HomeOverview extends StatelessWidget {
   final ValueChanged<String> onFilter;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-        colors: [Color(0xFF205B43), Color(0xFF103627), Color(0xFF0A241C)]),
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: const Color(0xFF3A7155)),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        const Icon(Icons.sports_cricket_rounded, size: 17, color: Color(0xFFFFC857)),
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Cricket starts here', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 4),
+          Text(MaterialLocalizations.of(context).formatFullDate(DateTime.now()),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+        ])),
         const SizedBox(width: 8),
-        const Expanded(child: Text('YOUR CRICKET COMPANION', style: TextStyle(
-          fontSize: 10, letterSpacing: 1.6, fontWeight: FontWeight.w800, color: Color(0xFFD5E7DA)))),
-        if (!loading) Container(width: 7, height: 7, decoration: BoxDecoration(
-          color: stale ? const Color(0xFFFFC857) : const Color(0xFF63E6BE), shape: BoxShape.circle)),
+        Icon(Icons.sports_cricket_rounded, color: scheme.primary, size: 28),
       ]),
-      const SizedBox(height: 18),
-      const Text('Cricket,\nin focus.', style: TextStyle(fontSize: 35, letterSpacing: -1.4,
-        fontWeight: FontWeight.w900, color: Colors.white, height: 1.08)),
-      const SizedBox(height: 12),
-      Text(MaterialLocalizations.of(context).formatFullDate(DateTime.now()),
-        style: const TextStyle(color: Color(0xFFD5E7DA), fontSize: 12)),
-      const SizedBox(height: 22),
+      const SizedBox(height: 16),
       Wrap(spacing: 8, runSpacing: 8, children: [
-        _stat(Icons.bolt_rounded, loading ? '— live' : stale ? '$live previously live' : '$live live', 'Live'),
-        _stat(Icons.calendar_today_rounded, loading ? '— upcoming' : '$upcoming upcoming', 'Upcoming'),
-        _stat(Icons.star_rounded, '$following following', 'Following'),
+        _stat(context, Icons.bolt_rounded, loading ? '— live' : stale ? '$live previously live' : '$live live', 'Live'),
+        _stat(context, Icons.calendar_today_rounded, loading ? '— upcoming' : '$upcoming upcoming', 'Upcoming'),
+        _stat(context, Icons.star_rounded, '$following following', 'Following'),
       ]),
-    ]),
-  );
+    ]);
+  }
 
-  Widget _stat(IconData icon, String label, String filter) => Material(
-    color: const Color(0x18FFFFFF), borderRadius: BorderRadius.circular(14),
-    child: InkWell(borderRadius: BorderRadius.circular(14), onTap: () => onFilter(filter),
-      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: const Color(0xFFFFC857)), const SizedBox(width: 7),
-          Flexible(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
-        ]),
+  Widget _stat(BuildContext context, IconData icon, String label, String filter) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = filter == 'Live' && !stale ? const Color(0xFFDA4555) : scheme.primary;
+    return Material(color: scheme.surface, borderRadius: BorderRadius.circular(10),
+      child: InkWell(borderRadius: BorderRadius.circular(10), onTap: () => onFilter(filter),
+        child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: scheme.outlineVariant)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 16, color: accent), const SizedBox(width: 6),
+            Flexible(child: Text(label, style: TextStyle(color: scheme.onSurface, fontSize: 12, fontWeight: FontWeight.w700))),
+          ]),
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class MatchFeedNotice extends StatelessWidget {

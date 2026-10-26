@@ -21,8 +21,8 @@ class PremiumMatchCard extends StatelessWidget {
     final accent = stale ? scheme.secondary : live ? (dark ? const Color(0xFFFF9693) : const Color(0xFFB42336)) : scheme.primary;
     final result = match.result?.trim() ?? '';
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: live && !stale ? scheme.primary.withValues(alpha: .5) : scheme.outlineVariant)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: live && !stale ? accent.withValues(alpha: .35) : scheme.outlineVariant)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(onTap: onTap, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(padding: const EdgeInsets.fromLTRB(18, 10, 8, 0), child: Row(children: [
@@ -38,7 +38,7 @@ class PremiumMatchCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(child: Text(match.series ?? _formatLabel,
             maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600))),
+            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600))),
           if (showFavorite) IconButton(
             tooltip: favorite ? 'Remove favorite' : 'Add favorite', onPressed: onFavorite,
             isSelected: favorite,
@@ -52,12 +52,12 @@ class PremiumMatchCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(match.title, maxLines: 2, overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant, height: 1.4)),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             _team(context, match.teamA ?? 'Team 1', match.teamAScore, false),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _team(context, match.teamB ?? 'Team 2', match.teamBScore, true),
             if (match.status == MatchStatus.upcoming && match.startTime != null) ...[
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Row(children: [
                 Icon(Icons.schedule_rounded, size: 14, color: scheme.primary), const SizedBox(width: 6),
                 Expanded(child: Text('${MaterialLocalizations.of(context).formatShortDate(match.startTime!.toLocal())} • '
@@ -73,7 +73,7 @@ class PremiumMatchCard extends StatelessWidget {
             Expanded(child: Text(result.isNotEmpty ? result : match.venue ?? 'View match details',
               maxLines: 2, overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 11, height: 1.4, color: scheme.onSurfaceVariant))),
-            const SizedBox(width: 8), Icon(Icons.arrow_forward_rounded, size: 17, color: scheme.primary),
+            const SizedBox(width: 8), Icon(live && !stale ? Icons.sensors_rounded : Icons.chevron_right_rounded, size: 19, color: live && !stale ? accent : scheme.primary),
           ]),
         ),
       ])),
@@ -99,7 +99,7 @@ class PremiumMatchCard extends StatelessWidget {
     return Row(children: [
       Container(width: 38, height: 40, alignment: Alignment.center,
         decoration: BoxDecoration(color: accent.withValues(alpha: .1),
-          border: Border.all(color: accent.withValues(alpha: .17)), borderRadius: BorderRadius.circular(12)),
+          border: Border.all(color: accent.withValues(alpha: .17)), borderRadius: BorderRadius.circular(20)),
         child: Text(short.isEmpty ? '—' : short, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: accent))),
       const SizedBox(width: 10),
       Expanded(flex: 5, child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
@@ -107,7 +107,7 @@ class PremiumMatchCard extends StatelessWidget {
       const SizedBox(width: 10),
       Flexible(flex: 4, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Text(total, textAlign: TextAlign.right, maxLines: 2, overflow: TextOverflow.ellipsis,
-          style: ScoreXTheme.scoreStyle.copyWith(fontSize: 23, color: scheme.onSurface)),
+          style: ScoreXTheme.scoreStyle.copyWith(fontSize: 25, color: scheme.onSurface)),
         if (overs != null) Text(overs, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right,
           style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
       ])),

@@ -3,22 +3,22 @@ import 'package:flutter/material.dart';
 
 /// A single visual language across scores, account screens and settings.
 abstract final class ScoreXTheme {
-  static const green = Color(0xFF0B3D2E);
-  static const gold = Color(0xFFFFC857);
-  static const mint = Color(0xFF63E6BE);
+  static const blue = Color(0xFF165DDE);
+  static const gold = Color(0xFFFFB547);
+  static const mint = Color(0xFF83B4FF);
 
   static ThemeData build(Brightness brightness) {
     final dark = brightness == Brightness.dark;
-    final background = dark ? const Color(0xFF081511) : const Color(0xFFF4F7F5);
-    final surface = dark ? const Color(0xFF11251D) : Colors.white;
-    final scheme = ColorScheme.fromSeed(seedColor: green, brightness: brightness).copyWith(
-      primary: dark ? mint : green,
-      onPrimary: dark ? const Color(0xFF05271B) : Colors.white,
-      secondary: dark ? gold : const Color(0xFF735200),
+    final background = dark ? const Color(0xFF0C111B) : const Color(0xFFF2F4F8);
+    final surface = dark ? const Color(0xFF171F2D) : Colors.white;
+    final scheme = ColorScheme.fromSeed(seedColor: blue, brightness: brightness).copyWith(
+      primary: dark ? mint : blue,
+      onPrimary: dark ? const Color(0xFF071C3D) : Colors.white,
+      secondary: dark ? gold : const Color(0xFF966000),
       surface: surface,
-      onSurface: dark ? const Color(0xFFE8F1EB) : const Color(0xFF172C23),
-      onSurfaceVariant: dark ? const Color(0xFFA3BAAE) : const Color(0xFF52675C),
-      outlineVariant: dark ? const Color(0xFF294236) : const Color(0xFFD8E4DC),
+      onSurface: dark ? const Color(0xFFEDF2FA) : const Color(0xFF182339),
+      onSurfaceVariant: dark ? const Color(0xFFA5B2C8) : const Color(0xFF5B687C),
+      outlineVariant: dark ? const Color(0xFF303C50) : const Color(0xFFE1E6EF),
     );
     final base = ThemeData(useMaterial3: true, brightness: brightness, colorScheme: scheme);
     return base.copyWith(
@@ -38,7 +38,7 @@ abstract final class ScoreXTheme {
       ),
       cardTheme: CardThemeData(
         color: surface, elevation: 0, margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: BorderSide(color: scheme.outlineVariant)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: scheme.outlineVariant)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true, fillColor: surface,
@@ -57,25 +57,25 @@ abstract final class ScoreXTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       )),
       chipTheme: base.chipTheme.copyWith(
-        backgroundColor: surface, selectedColor: dark ? gold : green,
+        backgroundColor: surface, selectedColor: dark ? mint : blue,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         shape: const StadiumBorder(), side: BorderSide(color: scheme.outlineVariant),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface, indicatorColor: dark ? gold.withValues(alpha: .17) : const Color(0xFFD8EEE0),
-        elevation: 0, height: 76,
+        backgroundColor: surface, indicatorColor: dark ? mint.withValues(alpha: .17) : const Color(0xFFE5EEFF),
+        elevation: 0, height: 70,
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
           color: states.contains(WidgetState.selected) ? scheme.primary : scheme.onSurfaceVariant,
           fontSize: 11, fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w500,
         )),
         iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
-          color: states.contains(WidgetState.selected) ? (dark ? gold : green) : scheme.onSurfaceVariant,
+          color: states.contains(WidgetState.selected) ? (dark ? mint : blue) : scheme.onSurfaceVariant,
           size: 25,
         )),
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: scheme.primary, unselectedLabelColor: scheme.onSurfaceVariant,
-        indicatorColor: dark ? gold : green, dividerColor: scheme.outlineVariant,
+        indicatorColor: dark ? mint : blue, dividerColor: scheme.outlineVariant,
         labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
         unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),

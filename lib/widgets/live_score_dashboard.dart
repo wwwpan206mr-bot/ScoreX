@@ -31,8 +31,9 @@ class LiveScoreDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gold = Theme.of(context).colorScheme.secondary;
-    final mint = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
+    final gold = scheme.secondary;
+    final mint = scheme.primary;
     final data = innings;
     final recent = deliveries.length > 12 ? deliveries.sublist(deliveries.length - 12) : deliveries;
     final prediction = stale || completed ? null : estimate;
@@ -45,11 +46,34 @@ class LiveScoreDashboard extends StatelessWidget {
         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
       const SizedBox(height: 10),
       if (completed && status != null) _card(Text(status!, style: const TextStyle(fontWeight: FontWeight.bold))),
-      if (data != null) _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (data != null) Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: scheme.primary.withValues(alpha: .35)),
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [scheme.primary.withValues(alpha: .12), scheme.surface]),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(battingTeam ?? 'Current innings', style: TextStyle(color: mint, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        Text('${data.runs}/${data.wickets}', style: ScoreXTheme.scoreStyle.copyWith(fontSize: 44)),
-        Text('${data.overs} overs', style: const TextStyle(color: Colors.grey)),
+        Wrap(spacing: 24, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${data.runs}/${data.wickets}', style: ScoreXTheme.scoreStyle.copyWith(fontSize: 48, color: scheme.onSurface)),
+            Text('${data.overs} overs', style: TextStyle(color: scheme.onSurfaceVariant)),
+          ]),
+          if (recent.isNotEmpty && !stale && !completed)
+            Container(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(color: scheme.primary.withValues(alpha: .1), borderRadius: BorderRadius.circular(12)),
+              child: Column(children: [
+                Text('LAST BALL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1, color: scheme.onSurfaceVariant)),
+                const SizedBox(height: 4),
+                Text(recent.last.marker, style: ScoreXTheme.scoreStyle.copyWith(fontSize: 32,
+                  color: recent.last.isWicket ? const Color(0xFFDA4555) : scheme.primary)),
+              ])),
+        ]),
         const SizedBox(height: 14),
         Wrap(spacing: 24, runSpacing: 12, children: [
           _metric('CRR', data.currentRunRate?.toStringAsFixed(2) ?? '—'),
@@ -142,9 +166,9 @@ class LiveScoreDashboard extends StatelessWidget {
       : ball.batterRuns >= 4 ? mint : gold;
     return Semantics(label: '${ball.over}.${ball.ball}: ${ball.marker}', child: Container(
       width: 38, height: 38, alignment: Alignment.center,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: .15),
-        border: Border.all(color: color.withValues(alpha: .6))),
-      child: Text(ball.marker, style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: ball.isWicket || ball.batterRuns >= 4 ? color : color.withValues(alpha: .1),
+        border: Border.all(color: color.withValues(alpha: .4))),
+      child: Text(ball.marker, style: TextStyle(color: ball.isWicket || ball.batterRuns >= 4 ? Theme.of(context).colorScheme.surface : color, fontWeight: FontWeight.w900)),
     ));
   }
 
