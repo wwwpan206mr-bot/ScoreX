@@ -335,7 +335,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                     onPressed: () { _searchController.clear(); setState(() {}); }, icon: const Icon(Icons.close_rounded)),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               Row(children: [
                 Expanded(child: Text(_navigationIndex == 0 ? 'Featured matches' : 'All matches',
                   style: Theme.of(context).textTheme.titleLarge)),

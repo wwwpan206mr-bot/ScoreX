@@ -18,7 +18,8 @@ class PremiumMatchCard extends StatelessWidget {
       MatchStatus.live => 'LIVE', MatchStatus.upcoming => 'UPCOMING',
       MatchStatus.completed => 'RESULT', MatchStatus.abandoned => 'ABANDONED', MatchStatus.unknown => 'MATCH',
     };
-    final accent = live ? const Color(0xFFEF7782) : scheme.primary;
+    final accent = live ? (Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF8CE6C3) : const Color(0xFF137B58)) : scheme.primary;
     final title = match.title.split(',');
     final subtitle = [if (title.length > 1) title[1].trim(), if (match.venue != null) match.venue!].join(' • ');
     Widget badge() => Row(mainAxisSize: MainAxisSize.min, children: [
@@ -30,9 +31,10 @@ class PremiumMatchCard extends StatelessWidget {
     ]);
     return Semantics(button: true, label: 'Open ${match.title}', child: Card(
       margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: live ? accent.withValues(alpha: .4) : scheme.outlineVariant)),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: Padding(padding: const EdgeInsets.fromLTRB(16, 8, 12, 16),
+      child: InkWell(onTap: onTap, child: Padding(padding: const EdgeInsets.fromLTRB(18, 10, 14, 18),
         child: LayoutBuilder(builder: (context, constraints) {
           final sideBadge = constraints.maxWidth >= 340 && MediaQuery.textScalerOf(context).scale(14) <= 19;
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -58,10 +60,12 @@ class PremiumMatchCard extends StatelessWidget {
               ],
             ]),
             const SizedBox(height: 16),
+            Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: .65)),
+            const SizedBox(height: 12),
             Row(children: [
               Expanded(child: Text(match.result?.trim().isNotEmpty == true ? match.result! : 'View match details',
                 maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, height: 1.4, color: scheme.secondary))),
+                style: TextStyle(fontSize: 12, height: 1.4, color: live ? accent : scheme.secondary, fontWeight: FontWeight.w600))),
               Icon(Icons.chevron_right_rounded, size: 19, color: scheme.onSurfaceVariant),
             ]),
             if (match.status == MatchStatus.upcoming && match.startTime != null)
@@ -84,22 +88,34 @@ class PremiumMatchCard extends StatelessWidget {
     final overs = parts != null && parts.length > 1 ? '(${parts.skip(1).join(' (')}' : null;
     final fallback = Center(child: Text(short.isEmpty ? '—' : short,
       style: TextStyle(fontSize: 9, color: scheme.primary, fontWeight: FontWeight.w900)));
-    return Row(children: [
-      Container(width: 30, height: 32, decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(8)),
-        child: image == null ? fallback : Image.network(image, width: 30, height: 32,
-          cacheWidth: 80, cacheHeight: 80, fit: BoxFit.contain, excludeFromSemantics: true,
-          errorBuilder: (_, error, stack) => fallback)),
-      const SizedBox(width: 8),
-      Expanded(flex: 5, child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 13, height: 1.25, fontWeight: FontWeight.w600, color: scheme.onSurface))),
-      const SizedBox(width: 8),
-      Flexible(flex: 4, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        AnimatedScore(total, textAlign: TextAlign.right,
-          style: ScoreXTheme.scoreStyle.copyWith(fontSize: 23, color: score == null ? scheme.onSurfaceVariant : scheme.primary)),
-        if (overs != null) Text(overs, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right,
-          style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
-      ])),
+    final badge = Container(width: 34, height: 34, decoration: BoxDecoration(
+      color: scheme.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(10)),
+      child: image == null ? fallback : Image.network(image, width: 34, height: 34,
+        cacheWidth: 80, cacheHeight: 80, fit: BoxFit.contain, excludeFromSemantics: true,
+        errorBuilder: (_, error, stack) => fallback));
+    final teamName = Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
+      style: TextStyle(fontSize: 13, height: 1.25, fontWeight: FontWeight.w600, color: scheme.onSurface));
+    final figures = Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+      AnimatedScore(total, textAlign: TextAlign.right,
+        style: ScoreXTheme.scoreStyle.copyWith(fontSize: 25,
+          color: score == null ? scheme.onSurfaceVariant : scheme.onSurface)),
+      if (overs != null) Text(overs, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right,
+        style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
     ]);
+    return LayoutBuilder(builder: (context, constraints) {
+      final stacked = constraints.maxWidth < 250 || MediaQuery.textScalerOf(context).scale(13) > 18;
+      if (stacked) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [badge, const SizedBox(width: 10), Expanded(child: teamName)]),
+          const SizedBox(height: 8),
+          Align(alignment: Alignment.centerRight, child: figures),
+        ]);
+      }
+      return Row(children: [
+        badge, const SizedBox(width: 10),
+        Expanded(flex: 5, child: teamName), const SizedBox(width: 8),
+        Flexible(flex: 4, child: figures),
+      ]);
+    });
   }
 }

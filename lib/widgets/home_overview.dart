@@ -9,39 +9,64 @@ class HomeOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Cricket starts here', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 4),
-          Text(MaterialLocalizations.of(context).formatFullDate(DateTime.now()),
-            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
-        ])),
-        const SizedBox(width: 8),
-        Icon(Icons.sports_cricket_rounded, color: scheme.primary, size: 28),
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const accent = Color(0xFF8CE6C3);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: dark ? const [Color(0xFF123C35), Color(0xFF102823)]
+              : const [Color(0xFF125447), Color(0xFF0B342C)]),
+        border: Border.all(color: const Color(0xFF6BC5A4).withValues(alpha: .24)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.sports_cricket_rounded, color: accent, size: 18),
+          const SizedBox(width: 8),
+          const Expanded(child: Text('THE MATCHDAY EDIT',
+            style: TextStyle(color: accent, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w800))),
+        ]),
+        const SizedBox(height: 16),
+        Text('Cricket starts here', style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          color: Colors.white, fontSize: 28, height: 1.12, letterSpacing: -.8)),
+        const SizedBox(height: 8),
+        Text(MaterialLocalizations.of(context).formatFullDate(DateTime.now()),
+          style: const TextStyle(color: Color(0xFFB3CDC3), fontSize: 12)),
+        const SizedBox(height: 22),
+        LayoutBuilder(builder: (context, constraints) {
+          final columns = constraints.maxWidth >= 250 &&
+              MediaQuery.textScalerOf(context).scale(12) <= 17 ? 3 : 1;
+          final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+          return Wrap(spacing: 8, runSpacing: 8, children: [
+            SizedBox(width: width, child: _stat(context, Icons.bolt_rounded,
+              loading ? '—' : '$live', stale ? 'Saved live' : 'Live now', 'Live')),
+            SizedBox(width: width, child: _stat(context, Icons.calendar_today_rounded,
+              loading ? '—' : '$upcoming', 'Upcoming', 'Upcoming')),
+            SizedBox(width: width, child: _stat(context, Icons.star_rounded,
+              '$following', 'Following', 'Following')),
+          ]);
+        }),
       ]),
-      const SizedBox(height: 16),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        _stat(context, Icons.bolt_rounded, loading ? '— live' : stale ? '$live previously live' : '$live live', 'Live'),
-        _stat(context, Icons.calendar_today_rounded, loading ? '— upcoming' : '$upcoming upcoming', 'Upcoming'),
-        _stat(context, Icons.star_rounded, '$following following', 'Following'),
-      ]),
-    ]);
+    );
   }
 
-  Widget _stat(BuildContext context, IconData icon, String label, String filter) {
-    final scheme = Theme.of(context).colorScheme;
-    final accent = filter == 'Live' && !stale ? const Color(0xFFDA4555) : scheme.primary;
-    return Material(color: scheme.surface, borderRadius: BorderRadius.circular(10),
-      child: InkWell(borderRadius: BorderRadius.circular(10), onTap: () => onFilter(filter),
-        child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: scheme.outlineVariant)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 16, color: accent), const SizedBox(width: 6),
-            Flexible(child: Text(label, style: TextStyle(color: scheme.onSurface, fontSize: 12, fontWeight: FontWeight.w700))),
-          ]),
-        ),
+  Widget _stat(BuildContext context, IconData icon, String value, String label, String filter) {
+    return Material(color: Colors.white.withValues(alpha: .07),
+      borderRadius: BorderRadius.circular(16), clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: () => onFilter(filter),
+        child: Padding(padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(icon, size: 18, color: filter == 'Following'
+                ? const Color(0xFFFFD180) : const Color(0xFF8CE6C3)),
+            const SizedBox(height: 12),
+            Text(value, style: const TextStyle(color: Colors.white,
+              fontSize: 24, height: 1, fontWeight: FontWeight.w800,
+              fontFeatures: [FontFeature.tabularFigures()])),
+            const SizedBox(height: 6),
+            Text(label, style: const TextStyle(color: Color(0xFFC5DBD2),
+              fontSize: 11, fontWeight: FontWeight.w600)),
+          ])),
       ),
     );
   }
