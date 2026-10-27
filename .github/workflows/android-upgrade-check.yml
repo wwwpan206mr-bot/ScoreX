@@ -1,0 +1,147 @@
+name: Android Signed Upgrade Check
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Optimized Android Release run to verify
+        required: true
+        default: '40425687709'
+        type: string
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-upgrade-check.yml']
+permissions:
+  contents: read
+  actions: read
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+jobs:
+  upgrade:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REQUESTED_RUN: ${{ inputs.run_id || '40425687709' }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SCOREX_KEYSTORE_PATH: ${{ github.workspace }}/android/app/scorex-upload.jks
+    steps:
+      - name: Resolve and wait for baseline release
+        id: baseline
+        run: |
+          set -euo pipefail
+          [[ "$REQUESTED_RUN" =~ ^[0-9]+$ ]]
+          gh run watch "$REQUESTED_RUN" --repo "$GITHUB_REPOSITORY" --exit-status
+          workflow=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_RUN" --jq '.path')
+          test "$workflow" = '.github/workflows/optimized-android-release.yml'
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_RUN" --jq '.head_sha')
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ steps.baseline.outputs.sha }}
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          cache: true
+      - name: Download signed baseline
+        run: gh run download "$REQUESTED_RUN" --repo "$GITHUB_REPOSITORY" --name scorex-optimized-android-release --dir baseline
+      - name: Configure stable signing and app services
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          FIREBASE_CONFIG_JSON: ${{ vars.FIREBASE_CONFIG_JSON }}
+          ADMOB_TEST_MODE: ${{ vars.ADMOB_TEST_MODE }}
+          ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
+          ADMOB_BANNER_ID: ${{ vars.ADMOB_BANNER_ID }}
+          ADMOB_NATIVE_ID: ${{ vars.ADMOB_NATIVE_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          flutter create --platforms=android --org com.scorex.app .
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$SCOREX_KEYSTORE_PATH"
+          python3 scripts/configure_play_signing.py
+          python3 - <<'PY'
+          import json, os, pathlib, re
+          override = os.environ.get('FIREBASE_CONFIG_JSON', '').strip()
+          if override:
+              config = json.loads(override)
+              assert all(config.get(k) for k in ['apiKey', 'appId', 'messagingSenderId', 'projectId'])
+              pathlib.Path('assets/branding/firebase_config.json').write_text(json.dumps(config))
+          version = re.search(r'^version:\s*[0-9.]+\+([0-9]+)', pathlib.Path('pubspec.yaml').read_text(), re.M)
+          with open(os.environ['GITHUB_ENV'], 'a') as out:
+              out.write(f'TEST_BUILD_NUMBER={int(version[1]) + 1}\n')
+          PY
+          python3 scripts/configure_ads.py
+          flutter pub get
+      - name: Build higher-version test APK using the same signing key
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: flutter build apk --flavor github --release --target-platform android-x64 --split-per-abi --build-number="$TEST_BUILD_NUMBER" --dart-define=API_BASE_URL="$API_BASE_URL"
+      - name: Verify matching certificates and increasing version codes
+        run: |
+          set -euo pipefail
+          mkdir -p upgrade-report
+          tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          old=baseline/app-x86_64-github-release.apk
+          new=build/app/outputs/flutter-apk/app-x86_64-github-release.apk
+          "$tools/apksigner" verify --print-certs "$old" > upgrade-report/baseline-certificate.txt
+          "$tools/apksigner" verify --print-certs "$new" > upgrade-report/upgrade-certificate.txt
+          old_cert=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' upgrade-report/baseline-certificate.txt)
+          new_cert=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' upgrade-report/upgrade-certificate.txt)
+          test -n "$old_cert"
+          test "$old_cert" = "$new_cert"
+          "$tools/aapt" dump badging "$old" > upgrade-report/baseline-apk.txt
+          "$tools/aapt" dump badging "$new" > upgrade-report/upgrade-apk.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          old, new = [re.search(r"package: name='([^']+)' versionCode='([0-9]+)'", Path(f'upgrade-report/{name}-apk.txt').read_text()).groups() for name in ['baseline','upgrade']]
+          assert old[0] == new[0] == 'com.scorex.app.scorex'
+          assert int(new[1]) > int(old[1])
+          Path('upgrade-report/versions.txt').write_text(f'Android versionCode: {old[1]} -> {new[1]}\n')
+          PY
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install baseline and upgrade without uninstalling on Android 35
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          disable-animations: true
+          script: |
+            bash scripts/check_android_startup.sh baseline/app-x86_64-github-release.apk
+            mv startup-report upgrade-report/baseline-startup
+            adb shell dumpsys package com.scorex.app.scorex > upgrade-report/package-before.txt
+            adb shell pm list packages -U com.scorex.app.scorex > upgrade-report/uid-before.txt
+            bash scripts/check_android_startup.sh build/app/outputs/flutter-apk/app-x86_64-github-release.apk
+            mv startup-report upgrade-report/upgrade-startup
+            adb shell dumpsys package com.scorex.app.scorex > upgrade-report/package-after.txt
+            adb shell pm list packages -U com.scorex.app.scorex > upgrade-report/uid-after.txt
+            diff upgrade-report/uid-before.txt upgrade-report/uid-after.txt
+            grep -m1 'firstInstallTime=' upgrade-report/package-before.txt | sed 's/^[[:space:]]*//' > upgrade-report/first-install-before.txt
+            grep -m1 'firstInstallTime=' upgrade-report/package-after.txt | sed 's/^[[:space:]]*//' > upgrade-report/first-install-after.txt
+            diff upgrade-report/first-install-before.txt upgrade-report/first-install-after.txt
+      - name: Record verified result
+        run: |
+          echo '### Signed Android upgrade verified' >> "$GITHUB_STEP_SUMMARY"
+          cat upgrade-report/versions.txt >> "$GITHUB_STEP_SUMMARY"
+          echo 'Both APK signatures match. Android accepted the higher-version APK over the baseline without uninstalling; package UID and first-install time stayed unchanged. Both builds ran for 30 seconds on Android 35. The higher-version APK is a test fixture and is not published.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: scorex-signed-upgrade-report
+          path: upgrade-report/
+          if-no-files-found: warn
+      - name: Remove private signing key
+        if: always()
+        run: rm -f "$SCOREX_KEYSTORE_PATH"
