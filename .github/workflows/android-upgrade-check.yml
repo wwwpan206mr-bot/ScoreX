@@ -53,7 +53,9 @@ jobs:
           channel: stable
           cache: true
       - name: Download signed baseline
-        run: gh run download "$REQUESTED_RUN" --repo "$GITHUB_REPOSITORY" --name scorex-optimized-android-release --dir baseline
+        run: |
+          gh run download "$REQUESTED_RUN" --repo "$GITHUB_REPOSITORY" --name scorex-optimized-android-release --dir baseline
+          test -s baseline/build/app/outputs/flutter-apk/app-x86_64-github-release.apk
       - name: Configure stable signing and app services
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -90,7 +92,7 @@ jobs:
           set -euo pipefail
           mkdir -p upgrade-report
           tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
-          old=baseline/app-x86_64-github-release.apk
+          old=baseline/build/app/outputs/flutter-apk/app-x86_64-github-release.apk
           new=build/app/outputs/flutter-apk/app-x86_64-github-release.apk
           "$tools/apksigner" verify --print-certs "$old" > upgrade-report/baseline-certificate.txt
           "$tools/apksigner" verify --print-certs "$new" > upgrade-report/upgrade-certificate.txt
@@ -122,7 +124,7 @@ jobs:
           profile: pixel_7_pro
           disable-animations: true
           script: |
-            bash scripts/check_android_startup.sh baseline/app-x86_64-github-release.apk
+            bash scripts/check_android_startup.sh baseline/build/app/outputs/flutter-apk/app-x86_64-github-release.apk
             mv startup-report upgrade-report/baseline-startup
             adb shell dumpsys package com.scorex.app.scorex > upgrade-report/package-before.txt
             adb shell pm list packages -U com.scorex.app.scorex > upgrade-report/uid-before.txt
