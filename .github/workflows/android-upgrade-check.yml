@@ -94,9 +94,9 @@ jobs:
           new=build/app/outputs/flutter-apk/app-x86_64-github-release.apk
           "$tools/apksigner" verify --print-certs "$old" > upgrade-report/baseline-certificate.txt
           "$tools/apksigner" verify --print-certs "$new" > upgrade-report/upgrade-certificate.txt
-          old_cert=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' upgrade-report/baseline-certificate.txt)
-          new_cert=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' upgrade-report/upgrade-certificate.txt)
-          test -n "$old_cert"
+          old_cert=$(sed -n 's/^.*certificate SHA-256 digest: //p' upgrade-report/baseline-certificate.txt | sort -u)
+          new_cert=$(sed -n 's/^.*certificate SHA-256 digest: //p' upgrade-report/upgrade-certificate.txt | sort -u)
+          [[ "$old_cert" =~ ^[a-fA-F0-9]{64}$ ]]
           test "$old_cert" = "$new_cert"
           "$tools/aapt" dump badging "$old" > upgrade-report/baseline-apk.txt
           "$tools/aapt" dump badging "$new" > upgrade-report/upgrade-apk.txt
