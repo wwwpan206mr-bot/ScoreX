@@ -2,6 +2,10 @@ name: Publish Signed GitHub APK Update
 on:
   workflow_dispatch:
     inputs:
+      upgrade_check_run_id:
+        description: Android Signed Upgrade Check run ID that must pass before publishing
+        required: true
+        type: string
       release_notes:
         description: Changes shown inside the app
         required: false
@@ -45,6 +49,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: write
+      actions: read
     concurrency:
       group: scorex-signed-github-release
       cancel-in-progress: false
@@ -118,6 +123,19 @@ jobs:
         run: |
           build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
           python3 scripts/create_update_manifest.py --apk-dir build/app/outputs/flutter-apk --aapt "$build_tools/aapt" --tag "$RELEASE_TAG"
+      - name: Require successful Android upgrade verification for this app source
+        env:
+          UPGRADE_CHECK_RUN: ${{ inputs.upgrade_check_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$UPGRADE_CHECK_RUN" =~ ^[0-9]+$ ]]
+          workflow=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$UPGRADE_CHECK_RUN" --jq '.path')
+          test "$workflow" = '.github/workflows/android-upgrade-check.yml'
+          gh run watch "$UPGRADE_CHECK_RUN" --repo "$GITHUB_REPOSITORY" --exit-status
+          verified_sha=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$UPGRADE_CHECK_RUN" --jq '.head_sha')
+          git fetch --no-tags --depth=1 origin "$verified_sha"
+          git diff --exit-code "$verified_sha" "$GITHUB_SHA" -- lib android assets pubspec.yaml scripts
+          echo 'Signed upgrade verification passed for the app source being published.' >> "$GITHUB_STEP_SUMMARY"
       - name: Publish complete signed release
         run: |
           set -euo pipefail
