@@ -40,9 +40,9 @@ class FestivalCalendarService {
           }
         }
       } else if (line == 'END:VEVENT' && title != null && date != null) {
-        final normalized = _dateOnly(date!);
+        final normalized = _dateOnly(date);
         if (!normalized.isBefore(today.subtract(const Duration(days: 1)))) {
-          events.add(FestivalEvent(title: title!, date: normalized));
+          events.add(FestivalEvent(title: title, date: normalized));
         }
       }
     }
