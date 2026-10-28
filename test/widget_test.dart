@@ -13,10 +13,20 @@ void main() {
       expect(event.date, date);
     });
 
-    test('ball event and innings models can be constructed', () {
-      expect(BallEvent, isNotNull);
-      expect(InningsSummary, isNotNull);
-      expect(WinEstimate, isNotNull);
+    test('ball event formats a boundary correctly', () {
+      const ball = BallEvent(over: 0, ball: 4, runs: 4, batterRuns: 4);
+      expect(ball.marker, '4');
+    });
+
+    test('innings summary calculates overs and run rate', () {
+      const innings = InningsSummary(runs: 30, wickets: 1, legalBalls: 12);
+      expect(innings.overs, '2.0');
+      expect(innings.currentRunRate, 15.0);
+    });
+
+    test('win estimate rejects incomplete innings', () {
+      const innings = InningsSummary(runs: 20, wickets: 1, legalBalls: 6);
+      expect(WinEstimate.calculate(innings), isNull);
     });
   });
 }
