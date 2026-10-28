@@ -1,173 +1,189 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:scorex/screens/account_page.dart';
-import 'package:scorex/services/scorex_auth.dart';
-import 'package:scorex/screens/cricket_match_centre.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:scorex/main.dart';
-import 'package:scorex/data/match_repository.dart';
-import 'package:scorex/models/cricket_match.dart';
-import 'package:scorex/models/ball_event.dart';
-import 'package:scorex/models/innings_summary.dart';
-import 'package:scorex/models/win_estimate.dart';
-import 'package:scorex/widgets/live_score_dashboard.dart';
-import 'package:scorex/screens/feature_pages.dart';
+import 'scorex_ads.dart';
+import 'animated_score.dart';
+import '../theme/scorex_theme.dart';
+import '../models/ball_event.dart';
+import '../models/innings_summary.dart';
+import '../models/win_estimate.dart';
 
-void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  setUp(() {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMessageHandler('flutter/assets', (message) async {
-      final key = const StringCodec().decodeMessage(message);
-      if (key == 'assets/branding/firebase_config.json') {
-        return ByteData.sublistView(Uint8List.fromList(utf8.encode('{}')));
-      }
-      return null;
-    });
-  });
+class LiveScoreDashboard extends StatelessWidget {
+  const LiveScoreDashboard({super.key, this.innings, this.deliveries = const [],
+    this.batting = const [], this.bowling = const [], this.estimate,
+    this.battingTeam, this.bowlingTeam, this.updatedAt, this.source,
+    this.stale = false, this.deliveryMessage, this.completed = false,
+    this.status, this.venue});
 
-  testWidgets('ScoreX launches with its branding', (tester) async {
-    await tester.pumpWidget(const ScoreXApp());
-    await tester.pump();
-    expect(find.byType(MaterialApp), findsOneWidget);
-    expect(find.textContaining('ScoreX'), findsWidgets);
-  });
+  final InningsSummary? innings;
+  final List<BallEvent> deliveries;
+  final List<Map<String, String>> batting;
+  final List<Map<String, String>> bowling;
+  final WinEstimate? estimate;
+  final String? battingTeam;
+  final String? bowlingTeam;
+  final DateTime? updatedAt;
+  final String? source;
+  final bool stale;
+  final String? deliveryMessage;
+  final bool completed;
+  final String? status;
+  final String? venue;
 
-  testWidgets('feature screen presents its verified-data capabilities', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ScoreXFeaturePage(title: 'Live score')),
-    );
-    await tester.pump();
-    expect(find.text('Live score'), findsWidgets);
-    expect(find.text('ADDITIONAL CAPABILITIES'), findsOneWidget);
-    expect(find.text('Live score and innings'), findsOneWidget);
-  });
+  Widget _card(Widget child) => Card(child: Padding(padding: const EdgeInsets.all(16), child: child));
 
-  testWidgets('news screen does not invent headlines', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ScoreXFeaturePage(title: 'News & Videos')),
-    );
-    await tester.pump();
-    expect(find.text('News and highlights source not connected'), findsOneWidget);
-  });
-
-  testWidgets('match centre retains score header when switching tabs', (tester) async {
-    var refreshed = false;
-    await tester.pumpWidget(MaterialApp(home: CricketMatchCentre(
-      title: 'Team A vs Team B',
-      status: 'Team A batting',
-      scores: const [{'team': 'Team A', 'score': '120/3 (15 ov)'}],
-      onRefresh: () => refreshed = true,
-    )));
-    expect(find.text('120/3 (15 ov)'), findsOneWidget);
-    await tester.tap(find.text('Scorecard'));
-    await tester.pumpAndSettle();
-    expect(find.text('120/3 (15 ov)'), findsOneWidget);
-    expect(find.text('No verified scorecard available yet'), findsOneWidget);
-    await tester.tap(find.byTooltip('Refresh match'));
-    expect(refreshed, isTrue);
-  });
-
-  testWidgets('completed match opens result summary without a waiting message', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: CricketMatchCentre(
-      title: 'Mexico Women vs Argentina Women',
-      completed: true,
-      status: 'Argentina Women won by 165 runs',
-      scores: [{'team': 'Argentina Women', 'score': '188/5 (20 ov)'}],
-    )));
-    expect(find.text('Result'), findsOneWidget);
-    expect(find.text('Match result'), findsOneWidget);
-    expect(find.text('Ball-by-ball commentary unavailable'), findsOneWidget);
-    expect(find.text('Live'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('live dashboard renders real delivery markers and experimental percentages', (tester) async {
-    tester.view.physicalSize = const Size(390, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: LiveScoreDashboard(
-      innings: InningsSummary(runs: 136, wickets: 4, legalBalls: 96, target: 170, scheduledOvers: 20),
-      battingTeam: 'Team B', bowlingTeam: 'Team A', estimate: WinEstimate(60, 39, 1),
-      deliveries: [
-        BallEvent(over: 15, ball: 5, runs: 0, isWicket: true),
-        BallEvent(over: 15, ball: 6, runs: 4, batterRuns: 4),
-      ],
-    ))));
-    expect(find.text('34 runs needed in 24 balls'), findsOneWidget);
-    expect(find.text('W'), findsOneWidget);
-    // The latest boundary appears in both the score panel and delivery history.
-    expect(find.text('LAST BALL'), findsOneWidget);
-    expect(find.text('4'), findsNWidgets(2));
-    await tester.scrollUntilVisible(find.text('Estimated win probability'), 150,
-      scrollable: find.byType(Scrollable).first);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('60%'), findsOneWidget);
-    expect(find.textContaining('not trained AI'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('delayed data suppresses estimates instead of showing live percentages', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: LiveScoreDashboard(
-      stale: true, battingTeam: 'Team B', bowlingTeam: 'Team A', estimate: WinEstimate(60, 39, 1),
-    ))));
-    expect(find.textContaining('Updates delayed'), findsOneWidget);
-    expect(find.textContaining('60%'), findsNothing);
-    expect(find.textContaining('Estimate paused'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('empty live filter explains feed coverage and restores all matches', (tester) async {
-    tester.view.reset();
-    tester.view.physicalSize = const Size(400, 1000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    // This screen renders the real bundled logo; retain the engine asset loader.
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMessageHandler('flutter/assets', null);
-    await tester.pumpWidget(MaterialApp(home: ScoreHomePage(
-      darkMode: true, onThemeChanged: (_) {}, matchRepository: _ResultsOnlyRepository(),
-    )));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Matches'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byType(ChoiceChip).at(1));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(ChoiceChip).at(1));
-    await tester.pumpAndSettle();
-    expect(find.text('No live matches in this feed'), findsOneWidget);
-    expect(find.text('Completed fixture'), findsNothing);
-    await tester.ensureVisible(find.text('View all matches'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('View all matches'));
-    await tester.pumpAndSettle();
-    expect(find.text('Completed fixture'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('unconfigured builds provide a labelled device guest UID', (tester) async {
-    final auth = ScoreXAuth.instance;
-    await auth.initialize();
-    await auth.enterGuest();
-    expect(auth.uid, startsWith('device_guest_'));
-    final firstUid = auth.uid;
-    await auth.enterGuest();
-    expect(auth.uid, firstUid);
-    await tester.pumpWidget(const MaterialApp(home: ScoreXAccountPage()));
-    expect(find.text('Guest account'), findsOneWidget);
-    expect(find.text(firstUid!), findsOneWidget);
-    expect(find.textContaining('Device-only guest ID'), findsOneWidget);
-    expect(find.text('Create account'), findsNothing);
-  });
-}
-
-class _ResultsOnlyRepository implements MatchRepository {
   @override
-  Future<List<CricketMatch>> getMatches({MatchStatus? status}) async => const [
-    CricketMatch(id: 'finished', title: 'Completed fixture', status: MatchStatus.completed,
-      teamA: 'Team A', teamB: 'Team B', result: 'Team A won by 10 runs'),
-  ];
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final gold = scheme.secondary;
+    final mint = scheme.primary;
+    final data = innings;
+    final recent = deliveries.length > 12 ? deliveries.sublist(deliveries.length - 12) : deliveries;
+    final prediction = stale || completed ? null : estimate;
+    return ListView(key: const PageStorageKey('live-dashboard'), padding: const EdgeInsets.all(12), children: [
+      if (stale) _card(Row(children: [
+        Icon(Icons.schedule, color: gold), SizedBox(width: 10),
+        Expanded(child: Text('Updates delayed • showing the last received deliveries')),
+      ])),
+      Text(completed ? 'Match result' : 'Live match centre',
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 10),
+      if (completed && status != null) _card(Text(status!, style: const TextStyle(fontWeight: FontWeight.bold))),
+      if (data != null) Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: scheme.primary.withValues(alpha: .35)),
+          // A flat score surface avoids expensive decorative layers while updating.
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(battingTeam ?? 'Current innings', style: TextStyle(color: mint, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        Wrap(spacing: 24, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            AnimatedScore('${data.runs}/${data.wickets}', style: ScoreXTheme.scoreStyle.copyWith(fontSize: 44, color: mint)),
+            Text('${data.overs} overs', style: TextStyle(color: scheme.onSurfaceVariant)),
+          ]),
+          if (recent.isNotEmpty && !stale && !completed)
+            Container(padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(color: scheme.primary.withValues(alpha: .1), borderRadius: BorderRadius.circular(12)),
+              child: Column(children: [
+                Text('LAST BALL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1, color: scheme.onSurfaceVariant)),
+                const SizedBox(height: 4),
+                AnimatedScore(recent.last.marker, style: ScoreXTheme.scoreStyle.copyWith(fontSize: 32,
+                  color: recent.last.isWicket ? const Color(0xFFDA4555) : scheme.primary)),
+              ])),
+        ]),
+        const SizedBox(height: 14),
+        Wrap(spacing: 24, runSpacing: 12, children: [
+          _metric('CRR', data.currentRunRate?.toStringAsFixed(2) ?? '—'),
+          if (data.target != null) _metric('Target', '${data.target}'),
+          if (data.requiredRunRate != null) _metric('RRR', data.requiredRunRate!.toStringAsFixed(2)),
+        ]),
+        if (!completed && data.runsNeeded != null && data.ballsRemaining != null) ...[
+          const SizedBox(height: 12),
+          Text('${data.runsNeeded} runs needed in ${data.ballsRemaining} balls',
+            style: TextStyle(color: gold, fontWeight: FontWeight.bold)),
+        ],
+        if (!completed && data.target == null && data.legalBalls > 0 &&
+            data.wickets < 10 && data.scheduledOvers != null) ...[
+          const SizedBox(height: 12),
+          Text('At current run rate: ${(data.currentRunRate! * data.scheduledOvers!).round()} projected',
+            style: const TextStyle(color: Colors.grey)),
+        ],
+      ])),
+      _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Recent deliveries', style: TextStyle(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        if (recent.isEmpty) ...[
+          const Text('Ball-by-ball commentary unavailable'),
+          const SizedBox(height: 6),
+          Text(deliveryMessage ?? 'A delivery feed is needed to show each ball.',
+            style: const TextStyle(color: Colors.grey)),
+        ] else SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+          for (var index = 0; index < recent.length; index++) ...[
+            if (index == 0 || recent[index].over != recent[index - 1].over)
+              Padding(padding: const EdgeInsets.only(right: 8),
+                child: Text('Over ${recent[index].over + 1}', style: const TextStyle(fontSize: 11))),
+            Padding(padding: const EdgeInsets.only(right: 6), child: _ball(context, recent[index])),
+          ],
+        ])),
+        if (source != null && updatedAt != null) ...[
+          const SizedBox(height: 12),
+          Text('$source • source update ${TimeOfDay.fromDateTime(updatedAt!.toLocal()).format(context)}',
+            style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        ],
+      ])),
+      _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [const Icon(Icons.insights, size: 18, color: gold), const SizedBox(width: 8),
+          Expanded(child: const Text('Estimated win probability', style: TextStyle(fontWeight: FontWeight.w800)))]),
+        const SizedBox(height: 14),
+        if (prediction == null || battingTeam == null || bowlingTeam == null)
+          Text(completed ? 'Match finished • see the official result above.'
+            : stale ? 'Estimate paused while delivery updates are delayed.'
+            : 'Available during a supported T20/ODI chase after 12 legal balls, with verified teams and target.',
+            style: const TextStyle(color: Colors.grey))
+        else ...[
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Text('$battingTeam\n${prediction.chasingPercent}%',
+              style: TextStyle(color: mint, fontWeight: FontWeight.w800))),
+            const SizedBox(width: 12),
+            Expanded(child: Text('$bowlingTeam\n${prediction.defendingPercent}%', textAlign: TextAlign.right,
+              style: TextStyle(color: gold, fontWeight: FontWeight.w800))),
+          ]),
+          const SizedBox(height: 12),
+          ClipRRect(borderRadius: BorderRadius.circular(8), child: SizedBox(height: 10, child: Row(children: [
+            if (prediction.chasingPercent > 0) Expanded(flex: prediction.chasingPercent, child: Container(color: mint)),
+            if (prediction.tiePercent > 0) Expanded(flex: prediction.tiePercent, child: Container(color: Colors.grey)),
+            if (prediction.defendingPercent > 0) Expanded(flex: prediction.defendingPercent, child: Container(color: gold)),
+          ]))),
+          const SizedBox(height: 8),
+          Text('Tie: ${prediction.tiePercent}% • before any super over', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          const SizedBox(height: 8),
+          const Text('Experimental statistical model • not trained AI. Assumes current scoring and wicket rates continue. Historical accuracy has not been calibrated.',
+            style: TextStyle(fontSize: 11, color: Colors.grey)),
+        ],
+      ])),
+      _players('Batters', batting, const ['name', 'runs', 'balls', 'fours', 'sixes', 'strikeRate'],
+        const ['Batter', 'R', 'B', '4s', '6s', 'SR']),
+      _players('Bowlers', bowling, const ['name', 'wickets', 'runs', 'overs', 'economy'],
+        const ['Bowler', 'W', 'R', 'Overs', 'Econ']),
+      const ScoreXAdSlot(format: ScoreXAdFormat.native),
+      if (venue != null) Padding(padding: const EdgeInsets.all(8), child: Text(venue!,
+        style: const TextStyle(color: Colors.grey, fontSize: 12))),
+    ]);
+  }
+
+  Widget _metric(String label, String value) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+    Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19)),
+  ]);
+
+  Widget _ball(BuildContext context, BallEvent ball) {
+    final gold = Theme.of(context).colorScheme.secondary;
+    final mint = Theme.of(context).colorScheme.primary;
+    final color = ball.isWicket ? const Color(0xFFFF6B6B)
+      : ball.batterRuns >= 4 ? mint : gold;
+    return Semantics(label: '${ball.over}.${ball.ball}: ${ball.marker}', child: Container(
+      width: 38, height: 38, alignment: Alignment.center,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: ball.isWicket || ball.batterRuns >= 4 ? color : color.withValues(alpha: .1),
+        border: Border.all(color: color.withValues(alpha: .4))),
+      child: Text(ball.marker, style: TextStyle(color: ball.isWicket || ball.batterRuns >= 4 ? Theme.of(context).colorScheme.surface : color, fontWeight: FontWeight.w900)),
+    ));
+  }
+
+  Widget _players(String title, List<Map<String, String>> rows, List<String> keys, List<String> headings) =>
+    _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      const SizedBox(height: 10),
+      if (rows.isEmpty) const Text('Player figures are not supplied for this match.', style: TextStyle(color: Colors.grey))
+      else SingleChildScrollView(scrollDirection: Axis.horizontal, child: DataTable(
+        columnSpacing: 18, horizontalMargin: 0,
+        columns: headings.map((text) => DataColumn(label: Text(text))).toList(),
+        rows: rows.map((row) => DataRow(cells: keys.map((key) => DataCell(Text(row[key] ?? '—'))).toList())).toList(),
+      )),
+    ]));
 }
+
+
 
