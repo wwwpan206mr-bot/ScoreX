@@ -10,6 +10,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -62,6 +63,7 @@ flutter {
 
 // Native implementations are separate source sets for each distribution.
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     add("githubImplementation", "androidx.core:core-ktx:1.17.0")
     add("playImplementation", "com.google.android.play:app-update-ktx:2.1.0")
     add("testGithubImplementation", "junit:junit:4.13.2")
