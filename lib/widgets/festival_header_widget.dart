@@ -68,10 +68,11 @@ class _FestivalHeaderWidgetState extends State<FestivalHeaderWidget> {
       if (!event.date.isBefore(todayDate)) { next = event; break; }
     }
     final isToday = next != null && next.date == todayDate;
-    final remaining = next == null ? Duration.zero : next.date.difference(todayDate);
-    final countdown = remaining.inDays == 0 ? 'Today'
-        : remaining.inDays == 1 ? 'Tomorrow'
-        : remaining.inDays.toString() + ' days to go';
+    final remaining = next == null ? Duration.zero : next.date.difference(today);
+    final countdown = remaining.isNegative ? 'Today'
+        : remaining.inDays == 0 ? '${remaining.inHours} hours to go'
+        : remaining.inDays == 1 ? '1 day ${remaining.inHours % 24} hours to go'
+        : '${remaining.inDays} days ${remaining.inHours % 24} hours to go';
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
