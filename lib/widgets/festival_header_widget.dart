@@ -117,7 +117,7 @@ class _FestivalHeaderWidgetState extends State<FestivalHeaderWidget> {
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
               const SizedBox(height: 3),
               Text(_error != null ? 'Tap to view details or retry'
-                  : isToday ? _greeting(next!.title)
+                  : isToday ? _greeting(next.title)
                   : next == null ? 'Tap to check the calendar'
                   : countdown + ' • Tap for details',
                 maxLines: 2, overflow: TextOverflow.ellipsis,
