@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'festival_calendar_service.dart';
 
@@ -31,9 +32,19 @@ class FestivalNotificationService {
 
   Future<void> scheduleNextFestival(FestivalEvent event) async {
     await initialize();
+    const notificationId = 72001;
+    await _plugin.cancel(notificationId);
+
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, event.date.year, event.date.month, event.date.day, 9);
-    if (!scheduled.isAfter(now)) return;
+    final eventDay = tz.TZDateTime(
+      tz.local, event.date.year, event.date.month, event.date.day,
+    );
+    final today = tz.TZDateTime(tz.local, now.year, now.month, now.day);
+    if (eventDay.isBefore(today)) return;
+
+    final scheduled = tz.TZDateTime(
+      tz.local, event.date.year, event.date.month, event.date.day, 9,
+    );
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
         'scorex_festivals',
@@ -43,15 +54,38 @@ class FestivalNotificationService {
         priority: Priority.high,
       ),
     );
-    await _plugin.zonedSchedule(
-      72001,
-      'ScoreX • ' + event.title,
-      _greeting(event.title),
-      scheduled,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: 'festival',
-    );
+
+    if (scheduled.isAfter(now)) {
+      await _plugin.zonedSchedule(
+        notificationId,
+        'ScoreX • ' + event.title,
+        _greeting(event.title),
+        scheduled,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: 'festival',
+      );
+      return;
+    }
+
+    // If the user first opens ScoreX after 9 AM on the festival day,
+    // show the greeting once rather than silently missing that day's alert.
+    final isToday = eventDay.year == now.year &&
+        eventDay.month == now.month && eventDay.day == now.day;
+    if (isToday) {
+      final prefs = await SharedPreferences.getInstance();
+      final dateKey = '${event.date.year}-${event.date.month.toString().padLeft(2, '0')}-${event.date.day.toString().padLeft(2, '0')}';
+      if (prefs.getString('scorex_last_festival_greeting') != dateKey) {
+        await _plugin.show(
+          notificationId,
+          'ScoreX • ' + event.title,
+          _greeting(event.title),
+          details,
+          payload: 'festival',
+        );
+        await prefs.setString('scorex_last_festival_greeting', dateKey);
+      }
+    }
   }
 
   String _greeting(String title) {
