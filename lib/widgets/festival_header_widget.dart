@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/festival_calendar_service.dart';
+import '../services/festival_notification_service.dart';
 
 class FestivalHeaderWidget extends StatefulWidget {
   const FestivalHeaderWidget({super.key});
@@ -29,6 +30,12 @@ class _FestivalHeaderWidgetState extends State<FestivalHeaderWidget> {
       final events = await _calendar.fetchEvents();
       if (!mounted) return;
       setState(() { _events = events; _loading = false; _error = null; });
+      final next = events.where((event) => !event.date.isBefore(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day))).firstOrNull;
+      if (next != null) {
+        final notifications = FestivalNotificationService.instance;
+        await notifications.requestPermission();
+        await notifications.scheduleNextFestival(next);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() { _loading = false; _error = 'Calendar temporarily unavailable'; });
@@ -110,7 +117,7 @@ class _FestivalHeaderWidgetState extends State<FestivalHeaderWidget> {
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
               const SizedBox(height: 3),
               Text(_error != null ? 'Tap to view details or retry'
-                  : isToday ? _greeting(next.title)
+                  : isToday ? _greeting(next!.title)
                   : next == null ? 'Tap to check the calendar'
                   : countdown + ' • Tap for details',
                 maxLines: 2, overflow: TextOverflow.ellipsis,
