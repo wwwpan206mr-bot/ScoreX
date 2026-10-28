@@ -13,6 +13,7 @@ import 'theme/scorex_theme.dart';
 import 'services/match_cache.dart';
 import 'widgets/app_version_tile.dart';
 import 'widgets/home_overview.dart';
+import 'widgets/festival_header_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/feature_pages.dart';
@@ -280,6 +281,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: -.8))),
         ]),
         actions: [
+          IconButton(tooltip: 'Festivals and special days', icon: const Icon(Icons.celebration_outlined), onPressed: () => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => const SafeArea(child: Padding(padding: EdgeInsets.all(16), child: FestivalHeaderWidget())))),
           IconButton(tooltip: 'My profile', icon: const Icon(Icons.account_circle_outlined),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXAccountPage()))),
           IconButton(onPressed: _openSettings, icon: const Icon(Icons.tune_rounded), tooltip: 'Settings'),
@@ -324,6 +326,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           SliverPadding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), sliver: SliverToBoxAdapter(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (_navigationIndex == 0) ...[
+                const FestivalHeaderWidget(),
                 _heroCard(context), const SizedBox(height: 16),
               ],
               TextField(
