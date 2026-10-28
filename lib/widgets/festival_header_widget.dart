@@ -54,6 +54,10 @@ class _FestivalHeaderWidgetState extends State<FestivalHeaderWidget> {
     if (text.contains('christmas') || text.contains('বড়দিন')) return 'Merry Christmas! Wishing you peace and joy.';
     if (text.contains('durga') || text.contains('দুর্গা')) return 'শুভ দুর্গাপূজা! সবার জীবনে আনন্দ ও সম্প্রীতি আসুক।';
     if (text.contains('buddha') || text.contains('বুদ্ধ')) return 'শুভ বুদ্ধ পূর্ণিমা! সবার জীবনে শান্তি বিরাজ করুক।';
+    if (text.contains('pohela') || text.contains('boishakh') || text.contains('bengali new year') || text.contains('bangla new year') || text.contains('পহেলা বৈশাখ') || text.contains('বাংলা নববর্ষ')) return 'শুভ নববর্ষ! নতুন বছর আনন্দময় ও সমৃদ্ধ হোক।';
+    if (text.contains('victory day') || text.contains('বিজয় দিবস') || text.contains('বিজয় দিবস')) return 'মহান বিজয় দিবসের শুভেচ্ছা।';
+    if (text.contains('independence day') || text.contains('স্বাধীনতা দিবস')) return 'মহান স্বাধীনতা দিবসের শুভেচ্ছা।';
+    if (text.contains('language martyrs') || text.contains('mother language') || text.contains('শহীদ দিবস') || text.contains('ভাষা শহীদ')) return 'আন্তর্জাতিক মাতৃভাষা দিবসের শ্রদ্ধা ও শুভেচ্ছা।';
     if (text.contains('new year') || text.contains('নববর্ষ')) return 'শুভ নববর্ষ! নতুন বছর আনন্দময় হোক।';
     return 'Warm wishes to everyone celebrating ' + title + '!';
   }
