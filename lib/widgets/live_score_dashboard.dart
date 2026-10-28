@@ -115,7 +115,7 @@ class LiveScoreDashboard extends StatelessWidget {
         ],
       ])),
       _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [const Icon(Icons.insights, size: 18, color: gold), const SizedBox(width: 8),
+        Row(children: [Icon(Icons.insights, size: 18, color: gold), const SizedBox(width: 8),
           Expanded(child: const Text('Estimated win probability', style: TextStyle(fontWeight: FontWeight.w800)))]),
         const SizedBox(height: 14),
         if (prediction == null || battingTeam == null || bowlingTeam == null)
