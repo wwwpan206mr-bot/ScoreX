@@ -79,8 +79,11 @@ class ScoreXAuth extends ChangeNotifier {
           : detail.contains('10:') || detail.contains('DEVELOPER_ERROR')
               ? 'Google sign-in setup mismatch. Register this APK signing SHA-1 in Firebase and check its Android package and Web client ID.'
               : 'Google sign-in failed (${e.code}). Check the Google provider and this build’s signing SHA-1 in Firebase. You can continue as a guest.';
-    } catch (_) { error = 'Unable to complete this request. Please try again.'; }
-    finally { busy = false; notifyListeners(); }
+    } on StateError catch (e) {
+      error = e.message.toString();
+    } catch (_) {
+      error = 'Unable to complete this request. Please try again.';
+    } finally { busy = false; notifyListeners(); }
   }
 
   Future<void> _enterDeviceGuest() async {
