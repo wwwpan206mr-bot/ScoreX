@@ -3,22 +3,22 @@ import 'package:flutter/material.dart';
 
 /// A single visual language across scores, account screens and settings.
 abstract final class ScoreXTheme {
-  static const blue = Color(0xFF165DDE);
-  static const gold = Color(0xFFFFB547);
-  static const mint = Color(0xFF83B4FF);
+  static const blue = Color(0xFF0F7A55);
+  static const gold = Color(0xFFFFC857);
+  static const mint = Color(0xFF8CE6C3);
 
   static ThemeData build(Brightness brightness) {
     final dark = brightness == Brightness.dark;
-    final background = dark ? const Color(0xFF090F13) : const Color(0xFFF2F4F8);
-    final surface = dark ? const Color(0xFF151F26) : Colors.white;
+    final background = dark ? const Color(0xFF07110E) : const Color(0xFFF4F8F5);
+    final surface = dark ? const Color(0xFF12211B) : Colors.white;
     final scheme = ColorScheme.fromSeed(seedColor: blue, brightness: brightness).copyWith(
       primary: dark ? mint : blue,
-      onPrimary: dark ? const Color(0xFF071C3D) : Colors.white,
+      onPrimary: dark ? const Color(0xFF08251A) : Colors.white,
       secondary: dark ? gold : const Color(0xFF966000),
       surface: surface,
       onSurface: dark ? const Color(0xFFEDF2FA) : const Color(0xFF182339),
       onSurfaceVariant: dark ? const Color(0xFFA5B2C8) : const Color(0xFF5B687C),
-      outlineVariant: dark ? const Color(0xFF303C50) : const Color(0xFFE1E6EF),
+      outlineVariant: dark ? const Color(0xFF294338) : const Color(0xFFDCE9E1),
     );
     final base = ThemeData(useMaterial3: true, brightness: brightness, colorScheme: scheme);
     return base.copyWith(
