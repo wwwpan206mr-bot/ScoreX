@@ -67,6 +67,8 @@ jobs:
           if config:
               for key in ['apiKey', 'appId', 'messagingSenderId', 'projectId']:
                   assert isinstance(config.get(key), str) and config[key], 'Incomplete Firebase configuration'
+              client_id = config.get('googleWebClientId')
+              assert isinstance(client_id, str) and client_id.endswith('.apps.googleusercontent.com'), 'Missing Google OAuth Web Client ID; Google login would be unavailable'
           pathlib.Path('assets/branding/firebase_config.json').write_text(json.dumps(config))
           PY
       - name: Configure AdMob placements
