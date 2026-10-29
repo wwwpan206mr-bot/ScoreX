@@ -70,6 +70,15 @@ jobs:
           EOF
           chmod 600 android/key.properties android/scorex-upload.jks
 
+      - name: Print release certificate fingerprints for Firebase
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          keytool -list -v -keystore android/scorex-upload.jks -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" |
+            grep -E '^(Alias name:|SHA1:|SHA256:)'
+
       - name: Install dependencies and test
         run: |
           flutter pub get
