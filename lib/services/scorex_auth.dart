@@ -122,22 +122,55 @@ class ScoreXAuth extends ChangeNotifier {
   });
 
   Future<AuthCredential?> _googleCredential() async {
-    final account = await GoogleSignIn(serverClientId: _webClientId, scopes: ['email']).signIn();
-    if (account == null) return null;
+    final signIn = GoogleSignIn(
+      serverClientId: _webClientId,
+      scopes: const ['email'],
+    );
+    final account = await signIn.signIn();
+    if (account == null) return null; // User cancelled the account picker.
     final tokens = await account.authentication;
-    return GoogleAuthProvider.credential(accessToken: tokens.accessToken, idToken: tokens.idToken);
+    if ((tokens.idToken == null || tokens.idToken!.isEmpty) &&
+        (tokens.accessToken == null || tokens.accessToken!.isEmpty)) {
+      throw StateError('Google returned no authentication token. Check the Web OAuth client ID.');
+    }
+    return GoogleAuthProvider.credential(
+      accessToken: tokens.accessToken,
+      idToken: tokens.idToken,
+    );
   }
 
   Future<void> google({bool upgrade = false}) => run(() async {
-    if (!googleAvailable) throw StateError('Google sign-in is not configured');
-    final credential = await _googleCredential();
-    if (credential == null) return;
-    if (upgrade && user?.isAnonymous == true) {
-      await user!.linkWithCredential(credential);
-    } else {
-      await _auth!.signInWithCredential(credential);
+    if (!googleAvailable) {
+      error = 'Google sign-in is not configured in this build. Check firebase_config.json and the Web OAuth client ID.';
+      return;
     }
-    await _clearLocal();
+    try {
+      final credential = await _googleCredential();
+      if (credential == null) return;
+      if (upgrade && user?.isAnonymous == true) {
+        await user!.linkWithCredential(credential);
+      } else {
+        await _auth!.signInWithCredential(credential);
+      }
+      await _clearLocal();
+    } on FirebaseAuthException catch (e) {
+      // Google errors need Google-specific guidance; do not show the email/password message.
+      error = switch (e.code) {
+        'account-exists-with-different-credential' =>
+          'এই Gmail দিয়ে আগে অন্য পদ্ধতিতে অ্যাকাউন্ট খোলা হয়েছে। আগে সেই পদ্ধতিতে লগইন করুন।',
+        'credential-already-in-use' =>
+          'এই Google অ্যাকাউন্টটি আগে থেকেই ScoreX-এ যুক্ত আছে। Guest upgrade-এর বদলে Google দিয়ে Sign in করুন।',
+        'invalid-credential' || 'user-token-expired' =>
+          'Google credential গ্রহণ করা যায়নি। Google provider, Web OAuth client ID এবং এই APK-এর SHA-1/SHA-256 মিলিয়ে দেখুন।',
+        'operation-not-allowed' =>
+          'Firebase Authentication-এ Google provider চালু নেই।',
+        'network-request-failed' =>
+          'ইন্টারনেট সংযোগ পরীক্ষা করে আবার Google দিয়ে লগইন করুন।',
+        'too-many-requests' =>
+          'অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
+        _ => 'Google login ব্যর্থ হয়েছে (' + e.code + ')। Firebase Authentication-এর Google provider ও OAuth configuration পরীক্ষা করুন।',
+      };
+    }
   });
 
   Future<void> reset(String email) => run(() async {
