@@ -92,7 +92,8 @@ jobs:
           override = os.environ.get('FIREBASE_CONFIG_JSON', '').strip()
           if override:
               config = json.loads(override)
-              assert all(config.get(key) for key in ['apiKey', 'appId', 'messagingSenderId', 'projectId'])
+              assert all(isinstance(config.get(key), str) and config[key] for key in ['apiKey', 'appId', 'messagingSenderId', 'projectId']), 'Incomplete Firebase configuration'
+              assert isinstance(config.get('googleWebClientId'), str) and config['googleWebClientId'].endswith('.apps.googleusercontent.com'), 'Missing Google OAuth Web Client ID; Google login would be unavailable'
               pathlib.Path('assets/branding/firebase_config.json').write_text(json.dumps(config))
           PY
           python3 scripts/configure_ads.py
