@@ -94,8 +94,13 @@ jobs:
             "$APKSIGNER" verify --verbose "$apk"
             PKG="$("$APKANALYZER" manifest application-id "$apk")"
             [ "$PKG" = "com.scorex.app.scorex" ] || { echo "::error::Unexpected package $PKG"; exit 1; }
-            ABI="$(basename "$apk" | sed -E 's/^app-(.*)-release\.apk$/\1/')"
-            case "$ABI" in armeabi-v7a|arm64-v8a|x86_64) ;; *) echo "::error::Unexpected APK ABI $ABI"; exit 1 ;; esac
+            FILE="$(basename "$apk")"
+            case "$FILE" in
+              *armeabi-v7a*) ABI=armeabi-v7a ;;
+              *arm64-v8a*) ABI=arm64-v8a ;;
+              *x86_64*) ABI=x86_64 ;;
+              *) echo "::error::Could not determine APK ABI from $FILE"; exit 1 ;;
+            esac
             cp "$apk" "release-assets/scorex-$ABI.apk"
             found=$((found + 1))
           done
