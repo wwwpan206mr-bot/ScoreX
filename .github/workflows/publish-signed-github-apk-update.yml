@@ -85,11 +85,13 @@ jobs:
           mkdir -p release-assets
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           APKANALYZER="$(find "$SDK_ROOT" -type f -name apkanalyzer 2>/dev/null | sort -V | tail -1)"
+          APKSIGNER="$(find "$SDK_ROOT" -type f -name apksigner 2>/dev/null | sort -V | tail -1)"
           test -n "$APKANALYZER"
+          test -n "$APKSIGNER"
           found=0
           for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
             [ -f "$apk" ] || continue
-            apksigner verify --verbose "$apk"
+            "$APKSIGNER" verify --verbose "$apk"
             PKG="$("$APKANALYZER" manifest application-id "$apk")"
             [ "$PKG" = "com.scorex.app.scorex" ] || { echo "::error::Unexpected package $PKG"; exit 1; }
             ABI="$(basename "$apk" | sed -E 's/^app-(.*)-release\.apk$/\1/')"
