@@ -137,13 +137,14 @@ jobs:
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
-          APKANALYZER="$(find "$SDK_ROOT" -type f -name apkanalyzer 2>/dev/null | sort -V | tail -1)"
+          export APKANALYZER="$(find "$SDK_ROOT" -type f -name apkanalyzer 2>/dev/null | sort -V | tail -1)"
+          test -n "$APKANALYZER"
           python3 - <<'PY'
           import hashlib, json, os, pathlib, subprocess
           analyzer = os.environ["APKANALYZER"]
           assets = {}
           for path in sorted(pathlib.Path("release-assets").glob("*.apk")):
-              abi = path.stem.rsplit("-", 1)[-1]
+              abi = path.stem.removeprefix("scorex-")
               version_code = int(subprocess.check_output([analyzer, "manifest", "version-code", str(path)], text=True).strip())
               data = path.read_bytes()
               assets[abi] = {
@@ -160,11 +161,9 @@ jobs:
               "forceUpdate": os.environ["FORCE_UPDATE"].lower() == "true",
               "assets": assets
           }
-          pathlib.Path("release-assets/update.json").write_text(json.dumps(metadata, indent=2) + "\n")
+          pathlib.Path("release-assets/update.json").write_text(json.dumps(metadata, indent=2) + "\\n")
           print(json.dumps(metadata, indent=2))
           PY
-        env:
-          APKANALYZER: ${{ env.APKANALYZER }}
 
       - name: Upload APKs and publish latest release
         env:
