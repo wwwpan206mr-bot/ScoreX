@@ -89,7 +89,7 @@ abstract final class ScoreXTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
         TargetPlatform.android: ZoomPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
       }),
     );
   }
