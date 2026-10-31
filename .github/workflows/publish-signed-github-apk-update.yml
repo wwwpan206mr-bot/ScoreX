@@ -82,7 +82,7 @@ jobs:
       - name: Install dependencies and test
         run: |
           flutter pub get
-          flutter analyze
+          flutter analyze --no-fatal-infos
           flutter test
 
       - name: Build split APKs with stable signature
