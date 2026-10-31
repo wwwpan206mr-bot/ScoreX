@@ -393,6 +393,19 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                 ],
               ]),
             )),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: const [
+                  ScoreXAdSlot(format: ScoreXAdFormat.native),
+                  SizedBox(height: 8),
+                  ScoreXAdSlot(format: ScoreXAdFormat.banner),
+                ],
+              ),
+            ),
+          ),
           SliverPadding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 28), sliver: SliverToBoxAdapter(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (_navigationIndex == 0) ...[
