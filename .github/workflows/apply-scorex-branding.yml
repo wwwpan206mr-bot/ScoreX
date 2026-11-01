@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'ScoreX_brand_assets.zip'
+      - '.github/scorex-branding-trigger'
 
 permissions:
   contents: write
