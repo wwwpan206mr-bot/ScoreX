@@ -64,7 +64,7 @@ class CricketMatchCentre extends StatelessWidget {
           title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
           actions: const [
             Padding(padding: EdgeInsets.symmetric(horizontal: 14), child: Center(child: Text('● LIVE SYNC',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF22C982)))),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF22C982))))),
           ],
           bottom: TabBar(
             isScrollable: true,
