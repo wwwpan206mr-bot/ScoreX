@@ -1,7 +1,7 @@
 name: scorex
 description: ScoreX - Premium cricket live score app.
 publish_to: "none"
-version: 1.0.20+24
+version: 1.0.21+25
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
