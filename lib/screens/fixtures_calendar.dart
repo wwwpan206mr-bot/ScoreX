@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'live_match_centre.dart';
 import '../models/cricket_match.dart';
@@ -11,7 +12,8 @@ class FixturesCalendarPage extends StatefulWidget {
   State<FixturesCalendarPage> createState() => _FixturesCalendarPageState();
 }
 
-class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
+class _FixturesCalendarPageState extends State<FixturesCalendarPage> with WidgetsBindingObserver {
+  Timer? _liveTimer;
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   MatchStatus? _status;
   List<CricketMatch> _loaded = [];
@@ -23,7 +25,33 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
     super.initState();
     _loaded = widget.matches;
     _loading = _loaded.isEmpty;
+    WidgetsBinding.instance.addObserver(this);
     if (_loading) _load();
+    _startLiveSync();
+  }
+
+  void _startLiveSync() {
+    _liveTimer?.cancel();
+    _liveTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (mounted && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) _load();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load();
+      _startLiveSync();
+    } else {
+      _liveTimer?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _liveTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
