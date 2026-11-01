@@ -193,7 +193,7 @@ class _ScoreXFeaturePageState extends State<ScoreXFeaturePage> with WidgetsBindi
             )),
           ] else ...[
             if (loading) const Center(child: CircularProgressIndicator())
-            else if (error != null) ListTile(title: const Text('Match data unavailable'), subtitle: Text(error!), trailing: IconButton(onPressed: _load, icon: const Icon(Icons.refresh)))
+            else if (error != null) ListTile(title: const Text('Match data unavailable'), subtitle: Text(error!), trailing: const Icon(Icons.wifi_off_outlined))
             else ...matches.take(15).map((m) => Card(child: ListTile(
               title: Text(m.title),
               subtitle: Text('${m.teamA ?? ''} ${m.teamAScore ?? ''}  •  ${m.teamB ?? ''} ${m.teamBScore ?? ''}\n${m.result ?? ''}'),
