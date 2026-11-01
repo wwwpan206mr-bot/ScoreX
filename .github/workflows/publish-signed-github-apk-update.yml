@@ -52,6 +52,12 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Generate the Android v2 embedding project
+        run: flutter create --platforms=android --org com.scorex.app .
+
+      - name: Configure production AdMob placements
+        run: python3 scripts/configure_ads.py
+
       - name: Configure stable Android signing
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
