@@ -102,7 +102,6 @@ class ScoreHomePage extends StatefulWidget {
 
 class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserver {
   late final ScoreRefreshLoop _refreshLoop;
-  bool _matchCentreOpen = false;
   int _refreshFailures = 0;
   String? _matchSignature;
   bool _fetchingMatches = false;
@@ -243,7 +242,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
 
   Future<void> _openMatchCentre(String matchId) async {
     final initial = _matches.where((match) => match.id == matchId).firstOrNull;
-    _matchCentreOpen = true;
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => LiveMatchCentre(matchId: matchId, initialMatch: initial,
         initialStale: _showingSavedScores),
