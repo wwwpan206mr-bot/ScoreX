@@ -67,9 +67,9 @@ class AdsService {
           if (!consent.isCompleted) consent.complete();
         },
       );
-      await consent.future.timeout(const Duration(seconds: 15), onTimeout: () {
-        debugPrint('ScoreX Ads: consent update timed out; checking existing consent state');
-      });
+      // Await UMP's success/failure callback directly. Future.timeout creates
+      // a pending timer that causes Flutter widget tests to fail.
+      await consent.future;
 
       try {
         privacyRequired.value = await ConsentInformation.instance.getPrivacyOptionsRequirementStatus() ==
