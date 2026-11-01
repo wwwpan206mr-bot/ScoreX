@@ -65,47 +65,34 @@ jobs:
       - name: Bump app version for the in-app update
         run: |
           python3 - <<'PY'
-          import pathlib, re
+          import pathlib
           p = pathlib.Path('pubspec.yaml')
           s = p.read_text()
-          m = re.search(r'^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$', s, re.M)
-          if not m:
-              raise SystemExit('Could not parse pubspec version')
-          major, minor, patch, build = map(int, m.groups())
+          line = next((x for x in s.splitlines() if x.startswith('version:')), None)
+          if not line:
+              raise SystemExit('Could not find pubspec version')
+          name, build = line.split(':', 1)[1].strip().split('+')
+          parts = [int(x) for x in name.split('.')]
+          if len(parts) != 3:
+              raise SystemExit('Unexpected version format')
+          major, minor, patch = parts
+          build = int(build)
           if (major, minor, patch, build) < (1, 0, 21, 25):
               new = f'version: {major}.{minor}.{patch + 1}+{build + 1}'
-              s = re.sub(r'^version:.*
-          PY
-
-      - name: Commit branded app and trigger signed in-app update release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p .github
-          date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/scorex-publish-trigger
-          git add assets/branding/scorex_logo.png assets/branding/scorex_splash_logo.png android/app/src/main/res pubspec.yaml .github/scorex-publish-trigger
-          git commit -m "Brand ScoreX app with updated cricket ball logo"
-          git push origin HEAD:main
-          gh workflow run publish-signed-github-apk-update.yml --ref main -f release_notes="Updated ScoreX cricket ball logo, app icon and splash branding."
-          echo "Branding committed and signed in-app update workflow dispatched." >> "$GITHUB_STEP_SUMMARY"
-, new, s, count=1, flags=re.M)
+              s = s.replace(line, new, 1)
               p.write_text(s)
           else:
-              new = f'version: {major}.{minor}.{patch}+{build}'
+              new = line
           print(new)
           PY
 
-      - name: Commit branded app and trigger signed in-app update release
+      - name: Commit branding and dispatch signed in-app update
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: \${{ github.token }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p .github
           date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/scorex-publish-trigger
           git add assets/branding/scorex_logo.png assets/branding/scorex_splash_logo.png android/app/src/main/res pubspec.yaml .github/scorex-publish-trigger
           git commit -m "Brand ScoreX app with updated cricket ball logo"
