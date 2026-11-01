@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ads_service.dart';
@@ -64,9 +65,14 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
       if (mounted && generation == _generation) {
         setState(() { _ad = null; _loaded = false; _retryWaiting = true; });
         // Avoid a tight retry loop; retry after a short network/ad-fill delay.
-        Future<void>.delayed(const Duration(seconds: 30), () {
-          if (mounted && _retryWaiting && !_loaded) setState(() { _retryWaiting = false; _attempted = false; });
-        });
+        // Automatic retry is enabled in production. Avoid pending timers in debug/widget tests.
+        if (!kDebugMode) {
+          Future<void>.delayed(const Duration(seconds: 30), () {
+            if (mounted && _retryWaiting && !_loaded) {
+              setState(() { _retryWaiting = false; _attempted = false; });
+            }
+          });
+        }
       }
     }
     try {
@@ -97,7 +103,9 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
       _ad = candidate;
       if (candidate is BannerAd) await candidate.load();
       if (candidate is NativeAd) await candidate.load();
-    } catch (_) {
+    } catch (error, stack) {
+      debugPrint('ScoreX Ads: ${widget.format} request exception: $error');
+      debugPrintStack(stackTrace: stack);
       candidate?.dispose();
       if (mounted && generation == _generation) setState(() { _ad = null; _loaded = false; });
     }
