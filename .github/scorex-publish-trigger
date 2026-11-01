@@ -3,3 +3,4 @@ Publish retry after Kotlin Gradle plugin and Node 24 action upgrades.
 Retry publish ScoreX 1.0.13 build 17 with corrected JSON manifest newline.
 Fix release signing precedence and publish ScoreX 1.0.14 build 18 using persistent keystore.
 Fix UMP ad initialization and add safe banner/native ad retries; publish ScoreX 1.0.15 build 19.
+Fix retry timer pending in Flutter widget tests; keep ScoreX 1.0.15 build 19 and publish signed AdMob recovery APK.
