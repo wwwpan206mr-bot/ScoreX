@@ -136,7 +136,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     if (state == AppLifecycleState.resumed) {
       // Retry AdMob/UMP initialization after transient startup or consent failures.
       unawaited(AdsService.instance.retryInitialization());
-      if (!_matchCentreOpen) _refreshLoop.start();
+      _refreshLoop.start();
     } else {
       _refreshLoop.pause();
     }
@@ -244,15 +244,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   Future<void> _openMatchCentre(String matchId) async {
     final initial = _matches.where((match) => match.id == matchId).firstOrNull;
     _matchCentreOpen = true;
-    _refreshLoop.pause();
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => LiveMatchCentre(matchId: matchId, initialMatch: initial,
         initialStale: _showingSavedScores),
     ));
     if (!mounted) return;
     _matchCentreOpen = false;
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed ||
-        WidgetsBinding.instance.lifecycleState == null) _refreshLoop.start();
   }
 
   List<CricketMatch> get _visibleMatches {
@@ -293,7 +290,21 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
           IconButton(tooltip: 'Festivals and special days', icon: const Icon(Icons.celebration_outlined), onPressed: () => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (_) => const SafeArea(child: Padding(padding: EdgeInsets.all(16), child: FestivalHeaderWidget())))),
           IconButton(tooltip: 'My profile', icon: const Icon(Icons.account_circle_outlined),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXAccountPage()))),
-          IconButton(onPressed: _openSettings, icon: const Icon(Icons.tune_rounded), tooltip: 'Settings'),
+          PopupMenuButton<String>(
+            tooltip: 'More options', icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) {
+              if (value == 'settings') _openSettings();
+              if (value == 'account') Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXAccountPage()));
+              if (value == 'privacy') Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXLegalPage(topic: ScoreXLegalTopic.privacy)));
+              if (value == 'support') Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXLegalPage(topic: ScoreXLegalTopic.support)));
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'settings', child: ListTile(leading: Icon(Icons.settings_outlined), title: Text('Settings'), dense: true)),
+              PopupMenuItem(value: 'account', child: ListTile(leading: Icon(Icons.account_circle_outlined), title: Text('My account'), dense: true)),
+              PopupMenuItem(value: 'privacy', child: ListTile(leading: Icon(Icons.privacy_tip_outlined), title: Text('Privacy policy'), dense: true)),
+              PopupMenuItem(value: 'support', child: ListTile(leading: Icon(Icons.support_agent_outlined), title: Text('Support'), dense: true)),
+            ],
+          ),
           const SizedBox(width: 6),
         ],
       ),
@@ -315,7 +326,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket_rounded), label: 'Matches'),
             NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups_rounded), label: 'Social'),
             NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video_rounded), label: 'Videos'),
-            NavigationDestination(icon: Icon(Icons.more_horiz_rounded), selectedIcon: Icon(Icons.apps_rounded), label: 'More'),
           ],
         ),
       ),
@@ -328,7 +338,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
     final shown = _navigationIndex == 0 ? allVisible.take(4).toList() : allVisible;
     return LayoutBuilder(builder: (context, constraints) {
       final columns = constraints.maxWidth >= 760 && MediaQuery.textScalerOf(context).scale(14) <= 20 ? 2 : 1;
-      return RefreshIndicator(onRefresh: _refreshLoop.refreshNow, child: CustomScrollView(
+      return CustomScrollView(
         key: PageStorageKey('match-feed-$_navigationIndex'),
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -367,13 +377,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
               ])),
               const SizedBox(height: 14),
               MatchFeedNotice(stale: _showingSavedScores, updatedAt: _lastMatchRefresh,
-                refreshing: _loadingMatches, onRefresh: _refreshLoop.refreshNow, error: _matchError),
+                refreshing: _loadingMatches, error: _matchError),
               const SizedBox(height: 16),
               if (_loadingMatches) const MatchLoadingCards(),
               if (_matchError != null && _matches.isEmpty) ...[
-                _emptyState(context, icon: Icons.wifi_off_rounded, title: 'Live scores unavailable', message: _matchError!),
-                FilledButton.icon(onPressed: _refreshLoop.refreshNow,
-                  icon: const Icon(Icons.refresh), label: const Text('Try again')),
+                _emptyState(context, icon: Icons.wifi_off_rounded, title: 'Live scores unavailable', message: 'Reconnecting automatically. Please check your internet connection.'),
               ],
               if (!_loadingMatches && allVisible.isEmpty && (_matchError == null || _matches.isNotEmpty)) _filteredEmptyState(context),
             ]),
@@ -430,7 +438,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
             ]),
           )),
         ],
-      ));
+      );
     });
   }
 
@@ -444,65 +452,17 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
         : 'No matches returned by the provider';
     final message = searching ? 'Try a team name or clear your search.'
         : _filter == 'Following' ? 'Star matches in All to follow them. Only matches returned by the feed appear here.'
-        : 'The provider returned ${_matches.length} matches. Coverage can be limited; refresh or view all available matches.';
+        : 'The provider returned ${_matches.length} matches. Coverage can be limited; view all available matches.';
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _emptyState(context, icon: Icons.sports_cricket, title: title, message: message),
-      Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
-        TextButton.icon(
-          onPressed: () => setState(() { _filter = 'All'; _searchController.clear(); }),
-          icon: const Icon(Icons.list_alt), label: const Text('View all matches')),
-        TextButton.icon(onPressed: _refreshLoop.refreshNow,
-          icon: const Icon(Icons.refresh), label: const Text('Refresh scores')),
-      ]),
+      TextButton.icon(
+        onPressed: () => setState(() { _filter = 'All'; _searchController.clear(); }),
+        icon: const Icon(Icons.list_alt), label: const Text('View all matches')),
     ]);
   }
 
   Widget _navigationSection(BuildContext context) {
     if (_navigationIndex == 1) return FixturesCalendarPage(matches: _matches);
-    if (_navigationIndex == 5) {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text('More', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
-          ),
-          Card(child: ListTile(
-            leading: const Icon(Icons.account_circle_outlined, color: scoreXGold),
-            title: const Text('My profile & account'),
-            subtitle: const Text('Your UID, email and profile photo'),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ScoreXAccountPage())),
-          )),
-          Card(child: ListTile(
-            leading: const Icon(Icons.settings_outlined, color: scoreXGold),
-            title: const Text('Settings & Preferences'),
-            subtitle: const Text('Theme, notifications and app options'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _openSettings,
-          )),
-          const SizedBox(height: 12),
-          const Text('PRIVACY, SUPPORT & LEGAL',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1.2)),
-          const SizedBox(height: 8),
-          ...[
-            (label: 'Privacy Policy', icon: Icons.privacy_tip_outlined, topic: ScoreXLegalTopic.privacy),
-            (label: 'Support', icon: Icons.support_agent_outlined, topic: ScoreXLegalTopic.support),
-            (label: 'Advertising Disclosure', icon: Icons.ads_click_outlined, topic: ScoreXLegalTopic.advertising),
-            (label: 'Account & Data Deletion', icon: Icons.delete_outline, topic: ScoreXLegalTopic.deletion),
-          ].map((item) => Card(child: ListTile(
-            leading: Icon(item.icon, color: scoreXGold),
-            title: Text(item.label),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => ScoreXLegalPage(topic: item.topic),
-            )),
-          ))),
-          const SizedBox(height: 12),
-          const AdsPrivacyTile(),
-          const AppVersionTile(),
-        ],
-      );
-    }
     final isSeries = _navigationIndex == 1;
     final isSocial = _navigationIndex == 3;
     final title = isSeries ? 'Cricket Series' : isSocial ? 'Cricket Community' : 'Cricket Videos';
