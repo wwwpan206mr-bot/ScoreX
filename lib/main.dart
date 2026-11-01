@@ -247,7 +247,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
         initialStale: _showingSavedScores),
     ));
     if (!mounted) return;
-    _matchCentreOpen = false;
   }
 
   List<CricketMatch> get _visibleMatches {
