@@ -53,23 +53,19 @@ void main() {
     });
   }
 
-  testWidgets('refresh failure retains received scores with an explicit saved label', (tester) async {
+  testWidgets('live score feed has no manual refresh control', (tester) async {
     tester.view.physicalSize = const Size(400, 1100);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(theme: ScoreXTheme.build(Brightness.dark), home: ScoreHomePage(
-      darkMode: true, onThemeChanged: (_) {}, matchRepository: _RefreshFailureRepository(),
+      themeMode: ThemeMode.dark, onThemeChanged: (_) {}, matchRepository: _RefreshFailureRepository(),
     )));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Matches'));
     await tester.pumpAndSettle();
     expect(find.text('153/4'), findsOneWidget);
-    await tester.tap(find.byTooltip('Refresh scores'));
-    await tester.pumpAndSettle();
-    expect(find.text('153/4'), findsOneWidget);
-    expect(find.text('Saved scores • updates delayed'), findsOneWidget);
-    expect(find.text('LIVE'), findsNothing);
-    expect(find.text('SAVED'), findsOneWidget);
+    expect(find.byTooltip('Refresh scores'), findsNothing);
+    expect(find.byIcon(Icons.refresh_rounded), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
@@ -80,7 +76,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(theme: ScoreXTheme.build(Brightness.light),
       home: MediaQuery(data: const MediaQueryData(size: Size(320, 1100), textScaler: TextScaler.linear(2), disableAnimations: true),
-        child: ScoreHomePage(darkMode: false, onThemeChanged: (_) {}, matchRepository: _RefreshFailureRepository()))));
+        child: ScoreHomePage(themeMode: ThemeMode.light, onThemeChanged: (_) {}, matchRepository: _RefreshFailureRepository()))));
     await tester.pumpAndSettle();
     expect(find.text('Cricket starts here'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -104,16 +100,16 @@ void main() {
     }
   });
 
-  testWidgets('settings theme switch updates immediately', (tester) async {
-    bool? changed;
+  testWidgets('settings supports dark, light and system appearance', (tester) async {
+    ThemeMode? changedMode;
     await tester.pumpWidget(MaterialApp(theme: ScoreXTheme.build(Brightness.dark), home: ScoreXSettingsPage(
-      darkMode: true, notificationsEnabled: false, onThemeChanged: (value) => changed = value,
+      themeMode: ThemeMode.dark, notificationsEnabled: false, onThemeChanged: (value) => changedMode = value,
       onNotificationsChanged: (_) {},
     )));
-    await tester.tap(find.byType(SwitchListTile).first);
+    await tester.tap(find.text('Light mode'));
     await tester.pump();
-    expect(changed, isFalse);
-    expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile).first).value, isFalse);
+    expect(changedMode, ThemeMode.light);
+    expect(find.text('System default'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
