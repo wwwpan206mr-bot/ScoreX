@@ -49,6 +49,7 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
     if (!mounted || !_service.ready.value || generation != _generation) return;
     AdWithView? candidate;
     void loaded(Ad ad) {
+      debugPrint('ScoreX Ads: ${widget.format.name} ad loaded');
       if (!mounted || generation != _generation || !_service.ready.value) {
         ad.dispose();
         return;
@@ -56,9 +57,15 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
       setState(() { _ad = ad as AdWithView; _loaded = true; });
     }
     void failed(Ad ad, LoadAdError error) {
+      debugPrint('ScoreX Ads: ${widget.format.name} failed to load '
+          '(code=${error.code}, domain=${error.domain}, message=${error.message})');
       ad.dispose();
       if (mounted && generation == _generation) {
-        setState(() { _ad = null; _loaded = false; });
+        setState(() { _ad = null; _loaded = false; _attempted = false; });
+        // Avoid a tight retry loop; retry after a short network/ad-fill delay.
+        Future<void>.delayed(const Duration(seconds: 30), () {
+          if (mounted && generation == _generation && !_loaded) setState(() {});
+        });
       }
     }
     try {
