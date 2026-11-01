@@ -20,6 +20,7 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
   bool _attempted = false;
   int _width = 0;
   int _generation = 0;
+  bool _retryWaiting = false;
 
   @override
   void initState() {
@@ -61,10 +62,10 @@ class _ScoreXAdSlotState extends State<ScoreXAdSlot> {
           '(code=${error.code}, domain=${error.domain}, message=${error.message})');
       ad.dispose();
       if (mounted && generation == _generation) {
-        setState(() { _ad = null; _loaded = false; _attempted = false; });
+        setState(() { _ad = null; _loaded = false; _retryWaiting = true; });
         // Avoid a tight retry loop; retry after a short network/ad-fill delay.
         Future<void>.delayed(const Duration(seconds: 30), () {
-          if (mounted && generation == _generation && !_loaded) setState(() {});
+          if (mounted && _retryWaiting && !_loaded) setState(() { _retryWaiting = false; _attempted = false; });
         });
       }
     }
