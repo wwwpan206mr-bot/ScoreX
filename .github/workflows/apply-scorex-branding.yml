@@ -67,7 +67,7 @@ jobs:
           import pathlib, re
           p = pathlib.Path('pubspec.yaml')
           s = p.read_text()
-          m = re.search(r'^version:\\s*(\\d+)\\.(\\d+)\\.(\\d+)\\+(\\d+)\\s*$', s, re.M)
+          m = re.search(r'^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$', s, re.M)
           if not m:
               raise SystemExit('Could not parse pubspec version')
           major, minor, patch, build = map(int, m.groups())
