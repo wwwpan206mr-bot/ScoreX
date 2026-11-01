@@ -191,7 +191,7 @@ jobs:
               "forceUpdate": os.environ["FORCE_UPDATE"].lower() == "true",
               "assets": assets
           }
-          pathlib.Path("release-assets/update.json").write_text(json.dumps(metadata, indent=2) + "\\n")
+          pathlib.Path("release-assets/update.json").write_text(json.dumps(metadata, indent=2) + "\n")
           print(json.dumps(metadata, indent=2))
           PY
 
