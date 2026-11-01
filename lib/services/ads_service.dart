@@ -25,6 +25,13 @@ class AdsService {
 
   Future<void> initialize() => _initialization ??= _initialize();
 
+  /// Retry after a temporary consent/network/plugin initialization failure.
+  Future<void> retryInitialization() async {
+    if (ready.value || !supported) return;
+    _initialization = null;
+    await initialize();
+  }
+
   Future<void> _initialize() async {
     if (!supported) return;
     try {
@@ -83,6 +90,9 @@ class AdsService {
         lastInitializationError = 'Google UMP consent does not currently allow ad requests';
         debugPrint('ScoreX Ads: ad requests blocked by UMP consent state');
         ready.value = false;
+        // Consent may change after the user reviews privacy choices or the
+        // network becomes available; allow the next foreground attempt.
+        _initialization = null;
         return;
       }
 
@@ -105,6 +115,8 @@ class AdsService {
       debugPrint('ScoreX Ads initialization failed: $error');
       debugPrintStack(stackTrace: stack);
       ready.value = false;
+      // Do not permanently cache a failed initialization Future.
+      _initialization = null;
     }
   }
 
