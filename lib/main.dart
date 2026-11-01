@@ -36,8 +36,8 @@ class ScoreXApp extends StatefulWidget {
 }
 
 class _ScoreXAppState extends State<ScoreXApp> {
-  static const _themeKey = 'scorex_dark_mode';
-  bool _darkMode = true;
+  static const _themeKey = 'scorex_theme_mode';
+  ThemeMode _themeMode = ThemeMode.dark;
 
   @override
   void initState() {
@@ -51,13 +51,20 @@ class _ScoreXAppState extends State<ScoreXApp> {
   Future<void> _loadThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    setState(() => _darkMode = prefs.getBool(_themeKey) ?? true);
+    final savedMode = prefs.getString(_themeKey);
+    // Migrate the previous Dark theme switch without losing the user's choice.
+    final legacyDark = prefs.getBool('scorex_dark_mode');
+    final mode = savedMode == 'light' ? ThemeMode.light
+        : savedMode == 'system' ? ThemeMode.system
+        : savedMode == 'dark' ? ThemeMode.dark
+        : legacyDark == false ? ThemeMode.light : ThemeMode.dark;
+    setState(() => _themeMode = mode);
   }
 
-  Future<void> _setTheme(bool value) async {
-    setState(() => _darkMode = value);
+  Future<void> _setTheme(ThemeMode value) async {
+    setState(() => _themeMode = value);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_themeKey, value);
+    await prefs.setString(_themeKey, value.name);
   }
 
   @override
@@ -65,12 +72,12 @@ class _ScoreXAppState extends State<ScoreXApp> {
     return MaterialApp(
       title: 'ScoreX',
       debugShowCheckedModeBanner: false,
-      themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: _themeMode,
       theme: ScoreXTheme.build(Brightness.light),
       darkTheme: ScoreXTheme.build(Brightness.dark),
       themeAnimationDuration: const Duration(milliseconds: 220),
       home: AppUpdateHost(child: ScoreXAuthGate(child: ScoreHomePage(
-        darkMode: _darkMode,
+        themeMode: _themeMode,
         onThemeChanged: _setTheme,
       ))),
     );
@@ -80,13 +87,13 @@ class _ScoreXAppState extends State<ScoreXApp> {
 class ScoreHomePage extends StatefulWidget {
   const ScoreHomePage({
     super.key,
-    required this.darkMode,
+    required this.themeMode,
     required this.onThemeChanged,
     this.matchRepository = const CricApiMatchRepository(),
   });
 
-  final bool darkMode;
-  final ValueChanged<bool> onThemeChanged;
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeChanged;
   final MatchRepository matchRepository;
 
   @override
@@ -226,7 +233,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   void _openSettings() {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => ScoreXSettingsPage(
-        darkMode: widget.darkMode,
+        themeMode: widget.themeMode,
         notificationsEnabled: _notificationsEnabled,
         onThemeChanged: widget.onThemeChanged,
         onNotificationsChanged: _setNotifications,
@@ -648,15 +655,15 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
 class ScoreXSettingsPage extends StatefulWidget {
   const ScoreXSettingsPage({
     super.key,
-    required this.darkMode,
+    required this.themeMode,
     required this.notificationsEnabled,
     required this.onThemeChanged,
     required this.onNotificationsChanged,
   });
 
-  final bool darkMode;
+  final ThemeMode themeMode;
   final bool notificationsEnabled;
-  final ValueChanged<bool> onThemeChanged;
+  final ValueChanged<ThemeMode> onThemeChanged;
   final ValueChanged<bool> onNotificationsChanged;
 
   @override
@@ -664,11 +671,11 @@ class ScoreXSettingsPage extends StatefulWidget {
 }
 
 class _ScoreXSettingsPageState extends State<ScoreXSettingsPage> {
-  late bool darkMode = widget.darkMode;
+  late ThemeMode themeMode = widget.themeMode;
   late bool notificationsEnabled = widget.notificationsEnabled;
 
-  void onThemeChanged(bool value) {
-    setState(() => darkMode = value);
+  void onThemeChanged(ThemeMode value) {
+    setState(() => themeMode = value);
     widget.onThemeChanged(value);
   }
 
@@ -687,12 +694,44 @@ class _ScoreXSettingsPageState extends State<ScoreXSettingsPage> {
           const Text('PREFERENCES', style: TextStyle(fontSize: 12, letterSpacing: 1.4, color: Colors.grey, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Card(
-            child: SwitchListTile(
-              secondary: Icon(darkMode ? Icons.dark_mode : Icons.light_mode),
-              title: const Text('Dark theme'),
-              subtitle: const Text('Choose your preferred appearance'),
-              value: darkMode,
-              onChanged: onThemeChanged,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.palette_outlined),
+                    title: Text('Appearance'),
+                    subtitle: Text('Choose how ScoreX looks on your device'),
+                  ),
+                  RadioListTile<ThemeMode>(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.dark_mode_outlined),
+                    title: const Text('Dark mode'),
+                    value: ThemeMode.dark,
+                    groupValue: themeMode,
+                    onChanged: (value) { if (value != null) onThemeChanged(value); },
+                  ),
+                  RadioListTile<ThemeMode>(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.light_mode_outlined),
+                    title: const Text('Light mode'),
+                    value: ThemeMode.light,
+                    groupValue: themeMode,
+                    onChanged: (value) { if (value != null) onThemeChanged(value); },
+                  ),
+                  RadioListTile<ThemeMode>(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.settings_suggest_outlined),
+                    title: const Text('System default'),
+                    subtitle: const Text('Follow your phone theme automatically'),
+                    value: ThemeMode.system,
+                    groupValue: themeMode,
+                    onChanged: (value) { if (value != null) onThemeChanged(value); },
+                  ),
+                ],
+              ),
             ),
           ),
           Card(
