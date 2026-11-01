@@ -99,7 +99,7 @@ class MatchFeedNotice extends StatelessWidget {
             style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
         ])),
         if (refreshing) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-        else const Text('LIVE', style: TextStyle(color: Color(0xFF20C982), fontWeight: FontWeight.w900, fontSize: 11)),
+        else Text(stale ? 'SAVED' : 'LIVE', style: TextStyle(color: stale ? scheme.secondary : const Color(0xFF20C982), fontWeight: FontWeight.w900, fontSize: 11)),
       ]),
     );
   }
