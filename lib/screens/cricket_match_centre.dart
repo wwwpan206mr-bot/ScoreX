@@ -62,10 +62,10 @@ class CricketMatchCentre extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-          actions: [
-            const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Center(child: Text('AUTO',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF82DCCA))))),
-            IconButton(onPressed: refreshing ? null : onRefresh, tooltip: 'Refresh match', icon: const Icon(Icons.refresh_rounded))],
+          actions: const [
+            Padding(padding: EdgeInsets.symmetric(horizontal: 14), child: Center(child: Text('● LIVE SYNC',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF22C982)))),
+          ],
           bottom: TabBar(
             isScrollable: true,
             tabs: [
