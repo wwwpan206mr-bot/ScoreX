@@ -195,7 +195,7 @@ class _LiveMatchCentreState extends State<LiveMatchCentre> with WidgetsBindingOb
             const Icon(Icons.cloud_off_outlined, size: 44), const SizedBox(height: 12),
             Text(_error ?? 'Connecting to live scores…', textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            FilledButton(onPressed: _loop.refreshNow, child: const Text('Retry')),
+            const Text('Reconnecting automatically…', textAlign: TextAlign.center),
           ]))));
     }
     final scores = data == null ? <Map<String, String>>[
@@ -215,7 +215,7 @@ class _LiveMatchCentreState extends State<LiveMatchCentre> with WidgetsBindingOb
           (_feed.updatedAt != null && DateTime.now().toUtc().difference(_feed.updatedAt!).inSeconds > 120) ||
           (data == null && widget.initialStale),
       deliveryMessage: _feed.reason, completed: completed,
-      onRefresh: _loop.refreshNow, refreshing: _loading, refreshError: _error,
+      refreshing: _loading, refreshError: _error,
       venue: data?['venue']?.toString() ?? initial?.venue,
       toss: data?['tossWinner'] == null ? null : '${data!['tossWinner']} • ${data['tossChoice'] ?? ''}',
     );
