@@ -8,3 +8,4 @@ Fix retry timer pending in Flutter widget tests; keep ScoreX 1.0.15 build 19 and
 Fix UMP timeout pending timer; publish ScoreX 1.0.16 build 20 signed release APK.
 Retry AdMob initialization after transient UMP/network failures; publish ScoreX 1.0.17 build 21.
 Retry AdMob initialization on app resume after consent/network failures; publish ScoreX 1.0.18 build 22.
+Publish ScoreX 1.0.20 build 24: latest home/navigation/theme and automatic live refresh changes; publish signed APKs and update.json for in-app delivery.
