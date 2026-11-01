@@ -19,6 +19,7 @@ class AdsService {
   RewardedAd? _rewarded;
   bool _loadingInterstitial = false;
   bool _loadingRewarded = false;
+  String? lastInitializationError;
 
   bool get supported => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
@@ -39,33 +40,70 @@ class AdsService {
         if (interstitialId.isNotEmpty) interstitialId = 'ca-app-pub-3940256099942544/1033173712';
         if (rewardedId.isNotEmpty) rewardedId = 'ca-app-pub-3940256099942544/5224354917';
       }
-      if ([bannerId, nativeId, interstitialId, rewardedId].every((id) => id.isEmpty)) return;
-      // Preflight the platform channel so widget tests/unsupported hosts fail safely.
-      await ConsentInformation.instance.getConsentStatus();
+      if ([bannerId, nativeId, interstitialId, rewardedId].every((id) => id.isEmpty)) {
+        throw StateError('No AdMob ad unit IDs configured in assets/ads/config.json');
+      }
+
+      // Request fresh UMP consent information before asking Google to serve ads.
+      // Do not call UMP getters before requestConsentInfoUpdate: some device/plugin
+      // combinations throw here and would silently disable every ad placement.
       final consent = Completer<void>();
       ConsentInformation.instance.requestConsentInfoUpdate(
         ConsentRequestParameters(),
         () async {
           try {
-            await ConsentForm.loadAndShowConsentFormIfRequired((error) {});
-          } catch (_) {
-            // The consent gate below remains authoritative on form errors.
+            await ConsentForm.loadAndShowConsentFormIfRequired((error) {
+              if (error != null) debugPrint('ScoreX Ads: consent form error: $error');
+            });
+          } catch (error, stack) {
+            debugPrint('ScoreX Ads: consent form exception: $error');
+            debugPrintStack(stackTrace: stack);
+          } finally {
+            if (!consent.isCompleted) consent.complete();
           }
+        },
+        (error) {
+          debugPrint('ScoreX Ads: consent info update failed: $error');
           if (!consent.isCompleted) consent.complete();
         },
-        (error) { if (!consent.isCompleted) consent.complete(); },
       );
-      await consent.future;
-      privacyRequired.value = await ConsentInformation.instance.getPrivacyOptionsRequirementStatus() ==
-          PrivacyOptionsRequirementStatus.required;
-      if (!await ConsentInformation.instance.canRequestAds()) return;
-      await MobileAds.instance.updateRequestConfiguration(RequestConfiguration(maxAdContentRating: MaxAdContentRating.g));
-      await MobileAds.instance.initialize();
+      await consent.future.timeout(const Duration(seconds: 15), onTimeout: () {
+        debugPrint('ScoreX Ads: consent update timed out; checking existing consent state');
+      });
+
+      try {
+        privacyRequired.value = await ConsentInformation.instance.getPrivacyOptionsRequirementStatus() ==
+            PrivacyOptionsRequirementStatus.required;
+      } catch (error) {
+        debugPrint('ScoreX Ads: privacy options status unavailable: $error');
+      }
+
+      final canRequest = await ConsentInformation.instance.canRequestAds();
+      if (!canRequest) {
+        lastInitializationError = 'Google UMP consent does not currently allow ad requests';
+        debugPrint('ScoreX Ads: ad requests blocked by UMP consent state');
+        ready.value = false;
+        return;
+      }
+
+      await MobileAds.instance.updateRequestConfiguration(
+        RequestConfiguration(maxAdContentRating: MaxAdContentRating.g),
+      );
+      final status = await MobileAds.instance.initialize();
+      debugPrint('ScoreX Ads: Mobile Ads SDK initialized; testMode=$testMode; '
+          'bannerConfigured=${bannerId.isNotEmpty}; nativeConfigured=${nativeId.isNotEmpty}');
+      for (final entry in status.adapterStatuses.entries) {
+        debugPrint('ScoreX Ads adapter ${entry.key}: ${entry.value.state} '
+            '${entry.value.description}');
+      }
+      lastInitializationError = null;
       ready.value = true;
       loadInterstitial();
       loadRewarded();
-    } catch (_) {
-      // Missing plugin (tests), offline consent, or unavailable ads: continue ad-free.
+    } catch (error, stack) {
+      lastInitializationError = error.toString();
+      debugPrint('ScoreX Ads initialization failed: $error');
+      debugPrintStack(stackTrace: stack);
       ready.value = false;
     }
   }
