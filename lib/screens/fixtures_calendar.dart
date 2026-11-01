@@ -59,8 +59,8 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
       appBar: AppBar(title: const Text('Fixtures & Series'), actions: [
         IconButton(tooltip: 'Choose date', onPressed: _pickDate, icon: const Icon(Icons.calendar_month_outlined)),
       ]),
-      body: RefreshIndicator(onRefresh: _load, child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(), slivers: [
+      body: CustomScrollView(
+        slivers: [
           SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverToBoxAdapter(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('The cricket calendar', style: Theme.of(context).textTheme.headlineSmall),
@@ -84,8 +84,8 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
               ])),
               const SizedBox(height: 18),
               if (_loading) const LinearProgressIndicator(minHeight: 2),
-              if (_error != null) Card(child: ListTile(leading: const Icon(Icons.wifi_off_rounded),
-                title: Text(_error!), trailing: IconButton(tooltip: 'Retry fixtures', onPressed: _load, icon: const Icon(Icons.refresh)))),
+              if (_error != null) const Card(child: ListTile(leading: Icon(Icons.wifi_off_rounded),
+                title: Text('Connection delayed'), subtitle: Text('Fixtures reconnect automatically when online.'))),
               const SizedBox(height: 12),
               Text('${localizations.formatMediumDate(_selectedDate)} • ${filtered.length} matches',
                 style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
@@ -96,7 +96,7 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
               Icon(Icons.event_available_outlined, size: 40), SizedBox(height: 16),
               Text('No verified fixtures for this date', textAlign: TextAlign.center,
                 style: TextStyle(fontWeight: FontWeight.w800)), SizedBox(height: 8),
-              Text('Try another date or refresh. Coverage depends on the current provider.', textAlign: TextAlign.center),
+              Text('Try another date. Coverage depends on the current provider.', textAlign: TextAlign.center),
             ]))))),
           SliverPadding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 28), sliver: SliverList.builder(
             itemCount: filtered.length, itemBuilder: (context, index) => PremiumMatchCard(
@@ -105,7 +105,7 @@ class _FixturesCalendarPageState extends State<FixturesCalendarPage> {
             ),
           )),
         ],
-      )),
+      ),
     );
   }
 
