@@ -126,8 +126,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && !_matchCentreOpen) {
-      _refreshLoop.start();
+    if (state == AppLifecycleState.resumed) {
+      // Retry AdMob/UMP initialization after transient startup or consent failures.
+      unawaited(AdsService.instance.retryInitialization());
+      if (!_matchCentreOpen) _refreshLoop.start();
     } else {
       _refreshLoop.pause();
     }
