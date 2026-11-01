@@ -97,5 +97,4 @@ jobs:
           git add assets/branding/scorex_logo.png assets/branding/scorex_splash_logo.png android/app/src/main/res pubspec.yaml .github/scorex-publish-trigger
           git commit -m "Brand ScoreX app with updated cricket ball logo"
           git push origin HEAD:main
-          gh workflow run publish-signed-github-apk-update.yml --ref main -f release_notes="Updated ScoreX cricket ball logo, app icon and splash branding."
           echo "Branding committed and signed in-app update workflow dispatched." >> "$GITHUB_STEP_SUMMARY"
