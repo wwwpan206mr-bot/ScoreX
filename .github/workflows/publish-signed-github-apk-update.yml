@@ -2,6 +2,10 @@ name: Publish Signed GitHub APK Update
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scorex-publish-trigger'
     inputs:
       release_notes:
         description: Public release notes shown in ScoreX
@@ -140,7 +144,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
           VERSION_NAME: ${{ steps.version.outputs.name }}
-          RELEASE_NOTES: ${{ inputs.release_notes }}
+          RELEASE_NOTES: ${{ inputs.release_notes || 'Bug fixes and performance improvements.' }}
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -155,7 +159,7 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.name }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
-          FORCE_UPDATE: ${{ inputs.force_update }}
+          FORCE_UPDATE: ${{ inputs.force_update || false }}
         run: |
           set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
