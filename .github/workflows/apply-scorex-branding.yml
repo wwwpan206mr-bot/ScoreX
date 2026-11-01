@@ -1,0 +1,92 @@
+name: Apply ScoreX Brand Assets and Publish Update
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ScoreX_brand_assets.zip'
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+concurrency:
+  group: scorex-branding-release
+  cancel-in-progress: false
+
+jobs:
+  apply-branding:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Extract and validate uploaded brand assets
+        run: |
+          set -euo pipefail
+          test -s ScoreX_brand_assets.zip
+          mkdir -p /tmp/scorex-brand
+          unzip -q ScoreX_brand_assets.zip -d /tmp/scorex-brand
+          test -s /tmp/scorex-brand/scorex_logo_transparent.png
+          test -s /tmp/scorex-brand/scorex_splash_logo.png
+          test -s /tmp/scorex-brand/scorex_app_icon_1024.png
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            test -s "/tmp/scorex-brand/android/mipmap-$density/ic_launcher.png"
+          done
+
+      - name: Install new ScoreX logo and Android launcher icons
+        run: |
+          set -euo pipefail
+          install -D /tmp/scorex-brand/scorex_logo_transparent.png assets/branding/scorex_logo.png
+          install -D /tmp/scorex-brand/scorex_splash_logo.png assets/branding/scorex_splash_logo.png
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            install -D "/tmp/scorex-brand/android/mipmap-$density/ic_launcher.png" "android/app/src/main/res/mipmap-$density/ic_launcher.png"
+          done
+          install -D /tmp/scorex-brand/scorex_adaptive_foreground.png android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/values
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/scorex_icon_background"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          cat > android/app/src/main/res/values/scorex_icon_colors.xml <<'EOF'
+          <resources>
+              <color name="scorex_icon_background">#051030</color>
+          </resources>
+          EOF
+
+      - name: Bump app version for the in-app update
+        run: |
+          python3 - <<'PY'
+          import pathlib, re
+          p = pathlib.Path('pubspec.yaml')
+          s = p.read_text()
+          m = re.search(r'^version:\\s*(\\d+)\\.(\\d+)\\.(\\d+)\\+(\\d+)\\s*$', s, re.M)
+          if not m:
+              raise SystemExit('Could not parse pubspec version')
+          major, minor, patch, build = map(int, m.groups())
+          new = f'version: {major}.{minor}.{patch + 1}+{build + 1}'
+          s = re.sub(r'^version:.*$', new, s, count=1, flags=re.M)
+          p.write_text(s)
+          print(new)
+          PY
+
+      - name: Commit branded app and trigger signed in-app update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p .github
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/scorex-publish-trigger
+          git add assets/branding/scorex_logo.png assets/branding/scorex_splash_logo.png android/app/src/main/res pubspec.yaml .github/scorex-publish-trigger
+          git commit -m "Brand ScoreX app with updated cricket ball logo"
+          git push origin HEAD:main
+          echo "Branding committed. Signed GitHub APK update workflow will now start from the trigger commit." >> "$GITHUB_STEP_SUMMARY"
