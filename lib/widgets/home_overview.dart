@@ -73,11 +73,9 @@ class HomeOverview extends StatelessWidget {
 }
 
 class MatchFeedNotice extends StatelessWidget {
-  const MatchFeedNotice({super.key, required this.stale, this.updatedAt, required this.refreshing,
-    required this.onRefresh, this.error});
+  const MatchFeedNotice({super.key, required this.stale, this.updatedAt, required this.refreshing, this.error});
   final bool stale, refreshing;
   final DateTime? updatedAt;
-  final VoidCallback onRefresh;
   final String? error;
 
   @override
@@ -100,9 +98,8 @@ class MatchFeedNotice extends StatelessWidget {
           if (error != null && stale) Text('Reconnecting automatically when online.',
             style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
         ])),
-        IconButton(tooltip: 'Refresh scores', onPressed: refreshing ? null : onRefresh,
-          icon: refreshing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.refresh_rounded, size: 20)),
+        if (refreshing) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+        else const Text('LIVE', style: TextStyle(color: Color(0xFF20C982), fontWeight: FontWeight.w900, fontSize: 11)),
       ]),
     );
   }
