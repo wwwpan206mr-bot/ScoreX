@@ -57,8 +57,14 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Development fallback only. GitHub release flavor overrides this when key.properties exists.
-            signingConfig = signingConfigs.getByName("debug")
+            // The build-type signing config takes precedence over flavor signing.
+            // Prefer the persistent upload keystore for every distributable release.
+            signingConfig = if (scorexSigningProperties.containsKey("storeFile")) {
+                signingConfigs.getByName("githubRelease")
+            } else {
+                // Local development fallback only; CI release workflows must provide key.properties.
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
