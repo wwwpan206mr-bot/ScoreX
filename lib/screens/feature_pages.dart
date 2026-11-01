@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/cricapi_match_repository.dart';
@@ -15,7 +16,8 @@ class ScoreXFeaturePage extends StatefulWidget {
   State<ScoreXFeaturePage> createState() => _ScoreXFeaturePageState();
 }
 
-class _ScoreXFeaturePageState extends State<ScoreXFeaturePage> {
+class _ScoreXFeaturePageState extends State<ScoreXFeaturePage> with WidgetsBindingObserver {
+  Timer? _liveTimer;
   List<CricketMatch> matches = [];
   String? error;
   bool loading = true;
@@ -24,7 +26,33 @@ class _ScoreXFeaturePageState extends State<ScoreXFeaturePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    _startLiveSync();
+  }
+
+  void _startLiveSync() {
+    _liveTimer?.cancel();
+    _liveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) _load();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load();
+      _startLiveSync();
+    } else {
+      _liveTimer?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    _liveTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -91,7 +119,7 @@ class _ScoreXFeaturePageState extends State<ScoreXFeaturePage> {
     'Mini score widget': (
       icon: Icons.picture_in_picture_alt_outlined,
       subtitle: 'Compact score view',
-      capabilities: ['In-app compact score card', 'Choose a followed match', 'Refresh from verified match data', 'System-wide floating overlay requires a later native Android permission and implementation']
+      capabilities: ['In-app compact score card', 'Choose a followed match', 'Automatically sync verified match data', 'System-wide floating overlay requires a later native Android permission and implementation']
     ),
     'Match alerts': (
       icon: Icons.notifications_active_outlined,
@@ -152,7 +180,7 @@ class _ScoreXFeaturePageState extends State<ScoreXFeaturePage> {
             ),
           ] else if (title == 'Teams & Players') ...[
             if (loading) const Center(child: CircularProgressIndicator())
-            else if (error != null) ListTile(title: const Text('Teams unavailable'), subtitle: Text(error!), trailing: IconButton(onPressed: _load, icon: const Icon(Icons.refresh)))
+            else if (error != null) ListTile(title: const Text('Teams unavailable'), subtitle: Text(error!), trailing: const Icon(Icons.wifi_off_outlined))
             else ...{
               for (final m in matches) ...[if (m.teamA != null) m.teamA!, if (m.teamB != null) m.teamB!]
             }.map((team) => Card(child: ListTile(leading: const Icon(Icons.groups, color: _scoreXGold), title: Text(team), subtitle: const Text('Team seen in verified match feed')))),
