@@ -330,13 +330,12 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Icon(_navigationIndex == item.key ? item.value.selectedIcon : item.value.icon,
                         size: 23, color: _navigationIndex == item.key ? scheme.primary : scheme.onSurfaceVariant),
-                      if (MediaQuery.sizeOf(context).width >= 480) ...[
-                        const SizedBox(height: 3),
-                        Text(item.value.label, maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 10, fontWeight: _navigationIndex == item.key
-                            ? FontWeight.w800 : FontWeight.w500,
-                            color: _navigationIndex == item.key ? scheme.primary : scheme.onSurfaceVariant)),
-                      ],
+                      const SizedBox(height: 3),
+                      Text(item.value.label, maxLines: 1, softWrap: false,
+                        overflow: TextOverflow.visible,
+                        style: TextStyle(fontSize: 9, fontWeight: _navigationIndex == item.key
+                          ? FontWeight.w800 : FontWeight.w500,
+                          color: _navigationIndex == item.key ? scheme.primary : scheme.onSurfaceVariant)),
                     ]),
                   ),
                 ),
