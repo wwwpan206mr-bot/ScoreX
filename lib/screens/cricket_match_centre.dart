@@ -217,13 +217,6 @@ class CricketMatchCentre extends StatelessWidget {
     );
   }
 
-  Widget _metric(String label, String value) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(color: Colors.grey)),
-      Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-    ],
-  );
 
   Widget _info() {
     final fields = <String, String?>{
