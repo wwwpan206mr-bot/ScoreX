@@ -4,7 +4,7 @@ ScoreX is an original Flutter cricket app with Android as the first target and a
 
 ## Development status
 
-This is the **UI and app-structure phase**. The app intentionally does not include invented cricket scores or sample player statistics. Live data is not connected yet, as requested.
+This is an active Flutter app with a Cloudflare Worker-backed CricAPI match feed. Match lists and match-centre totals refresh automatically; delivery commentary, scorecards, squads and other details are shown only when the provider returns verifiable data. No fictional scores or player statistics are generated.
 
 ### App screens and navigation prepared
 
@@ -21,9 +21,9 @@ This is the **UI and app-structure phase**. The app intentionally does not inclu
 - API-neutral CricketMatch model and MatchRepository boundary
 - Widget tests, Dart analyzer and GitHub Actions Android build workflow
 
-### Not active yet
+### Provider-dependent / planned
 
-The following require the later live-data/platform integration phase: real scores, commentary, scorecards, team/player profiles, schedules, rankings, news/video feeds, win probability, push notifications and a system-wide floating overlay. The mini-widget screen documents the intended feature; it is not yet an Android system overlay. Search and status filters are UI scaffolding until real match data is connected.
+Coverage depends on the connected cricket provider and the selected match. Delivery commentary, full scorecards, squads, player profiles, schedules, rankings, news/video feeds and provider-supplied win probability may be unavailable for some matches. The experimental chasing-side estimate is a transparent Monte Carlo model, not a trained AI model. Push notifications and a system-wide floating overlay still require additional backend/platform work. Search and status filters operate on matches returned by the feed.
 
 ## Build APK / AAB
 
