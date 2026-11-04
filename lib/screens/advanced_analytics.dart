@@ -6,13 +6,13 @@ class ScoreXAdvancedAnalytics extends StatelessWidget {
   const ScoreXAdvancedAnalytics({
     super.key,
     this.deliveries = const [],
-    this.winProbability,
+    this.chasingProbability,
     this.partnershipRuns,
     this.partnershipBalls,
   });
 
   final List<BallEvent> deliveries;
-  final double? winProbability;
+  final double? chasingProbability;
   final int? partnershipRuns;
   final int? partnershipBalls;
 
@@ -30,13 +30,15 @@ class ScoreXAdvancedAnalytics extends StatelessWidget {
       Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Win probability', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text('Chasing-side model estimate', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          if (winProbability == null)
-            const Text('Unavailable — requires a verified analytics provider.')
+          if (chasingProbability == null)
+            const Text('Unavailable — this match does not have enough verified innings data.')
           else ...[
-            Text('${winProbability!.clamp(0, 100).toStringAsFixed(1)}%'),
-            LinearProgressIndicator(value: winProbability!.clamp(0, 100) / 100),
+            Text('${chasingProbability!.clamp(0, 100).toStringAsFixed(0)}%'),
+            LinearProgressIndicator(value: chasingProbability!.clamp(0, 100) / 100),
+            const SizedBox(height: 8),
+            const Text('Experimental Monte Carlo estimate, not an AI prediction or a guaranteed outcome.', style: TextStyle(fontSize: 11, color: Colors.grey)),
           ],
         ],
       ))),
