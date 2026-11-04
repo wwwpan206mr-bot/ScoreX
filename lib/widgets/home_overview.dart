@@ -10,63 +10,126 @@ class HomeOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    const accent = Color(0xFF8CE6C3);
+    const mint = Color(0xFF8CE6C3);
+    const gold = Color(0xFFFFD180);
+    final date = MaterialLocalizations.of(context).formatFullDate(DateTime.now());
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: dark ? const [Color(0xFF123C35), Color(0xFF102823)]
-              : const [Color(0xFF125447), Color(0xFF0B342C)]),
-        border: Border.all(color: const Color(0xFF6BC5A4).withValues(alpha: .24)),
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xFF103F32), Color(0xFF0A241E), Color(0xFF071A17)],
+        ),
+        border: Border.all(color: mint.withValues(alpha: .25)),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF0B6B4B).withValues(alpha: dark ? .18 : .12),
+            blurRadius: 24, offset: const Offset(0, 10)),
+        ],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Icon(Icons.sports_cricket_rounded, color: accent, size: 18),
-          const SizedBox(width: 8),
-          const Expanded(child: Text('THE MATCHDAY EDIT',
-            style: TextStyle(color: accent, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w800))),
-        ]),
-        const SizedBox(height: 16),
-        Text('Cricket starts here', style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-          color: Colors.white, fontSize: 28, height: 1.12, letterSpacing: -.8)),
-        const SizedBox(height: 8),
-        Text(MaterialLocalizations.of(context).formatFullDate(DateTime.now()),
-          style: const TextStyle(color: Color(0xFFB3CDC3), fontSize: 12)),
-        const SizedBox(height: 22),
-        LayoutBuilder(builder: (context, constraints) {
-          final columns = constraints.maxWidth >= 250 &&
-              MediaQuery.textScalerOf(context).scale(12) <= 17 ? 3 : 1;
-          final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
-          return Wrap(spacing: 8, runSpacing: 8, children: [
-            SizedBox(width: width, child: _stat(context, Icons.bolt_rounded,
-              loading ? '—' : '$live', stale ? 'Saved live' : 'Live now', 'Live')),
-            SizedBox(width: width, child: _stat(context, Icons.calendar_today_rounded,
-              loading ? '—' : '$upcoming', 'Upcoming', 'Upcoming')),
-            SizedBox(width: width, child: _stat(context, Icons.star_rounded,
-              '$following', 'Following', 'Following')),
-          ]);
-        }),
+      child: Stack(children: [
+        Positioned(right: -34, top: -42, child: Container(
+          width: 178, height: 178,
+          decoration: BoxDecoration(shape: BoxShape.circle,
+            border: Border.all(color: mint.withValues(alpha: .10), width: 1.2)),
+        )),
+        Positioned(right: 8, top: 20, child: Transform.rotate(
+          angle: -.42,
+          child: Container(
+            width: 74, height: 74,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: [Color(0xFFFFE3A0), Color(0xFFC7832E), Color(0xFF7A3D1C)]),
+              border: Border.all(color: Colors.white.withValues(alpha: .45), width: 2),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .25), blurRadius: 16, offset: const Offset(0, 8))],
+            ),
+            child: Center(child: Container(
+              width: 42, height: 58,
+              decoration: BoxDecoration(border: Border(
+                left: BorderSide(color: Colors.white.withValues(alpha: .8), width: 1.5),
+                right: BorderSide(color: Colors.white.withValues(alpha: .8), width: 1.5),
+              )),
+              child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                for (var i = 0; i < 5; i++)
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Container(width: 5, height: 1.5, color: Colors.white.withValues(alpha: .9))),
+              ])),
+            )),
+          ),
+        )),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 19, 20, 18),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(width: 7, height: 7, decoration: const BoxDecoration(
+                color: mint, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              const Text('SCOREX  •  MATCHDAY', style: TextStyle(
+                color: mint, fontSize: 10, letterSpacing: 1.7, fontWeight: FontWeight.w900)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .09),
+                  borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.white.withValues(alpha: .12))),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(stale ? Icons.history_rounded : Icons.bolt_rounded,
+                    size: 13, color: stale ? gold : mint),
+                  const SizedBox(width: 4),
+                  Text(stale ? 'SAVED' : 'LIVE CENTRE', style: const TextStyle(
+                    color: Colors.white, fontSize: 9, letterSpacing: .7, fontWeight: FontWeight.w800)),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 22),
+            const Text('Every moment.\nEvery run.', style: TextStyle(
+              color: Colors.white, fontSize: 29, height: 1.06,
+              letterSpacing: -1.1, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 9),
+            Text(date, style: const TextStyle(color: Color(0xFFB8D3C8), fontSize: 11)),
+            const SizedBox(height: 22),
+            LayoutBuilder(builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 250 &&
+                  MediaQuery.textScalerOf(context).scale(12) <= 17 ? 3 : 1;
+              final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+              return Wrap(spacing: 8, runSpacing: 8, children: [
+                SizedBox(width: width, child: _stat(context, Icons.sensors_rounded,
+                  loading ? '—' : '$live', 'Live matches', 'Live', mint)),
+                SizedBox(width: width, child: _stat(context, Icons.calendar_month_rounded,
+                  loading ? '—' : '$upcoming', 'Coming up', 'Upcoming', Colors.white)),
+                SizedBox(width: width, child: _stat(context, Icons.star_rounded,
+                  '$following', 'Following', 'Following', gold)),
+              ]);
+            }),
+          ]),
+        ),
       ]),
     );
   }
 
-  Widget _stat(BuildContext context, IconData icon, String value, String label, String filter) {
-    return Material(color: Colors.white.withValues(alpha: .07),
-      borderRadius: BorderRadius.circular(16), clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: () => onFilter(filter),
-        child: Padding(padding: const EdgeInsets.all(12),
+  Widget _stat(BuildContext context, IconData icon, String value, String label,
+      String filter, Color accent) {
+    return Material(
+      color: Colors.white.withValues(alpha: .075),
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onFilter(filter),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(icon, size: 18, color: filter == 'Following'
-                ? const Color(0xFFFFD180) : const Color(0xFF8CE6C3)),
-            const SizedBox(height: 12),
-            Text(value, style: const TextStyle(color: Colors.white,
-              fontSize: 24, height: 1, fontWeight: FontWeight.w800,
+            Icon(icon, size: 17, color: accent),
+            const SizedBox(height: 10),
+            Text(value, style: const TextStyle(color: Colors.white, fontSize: 23,
+              height: 1, fontWeight: FontWeight.w900,
               fontFeatures: [FontFeature.tabularFigures()])),
             const SizedBox(height: 6),
-            Text(label, style: const TextStyle(color: Color(0xFFC5DBD2),
-              fontSize: 11, fontWeight: FontWeight.w600)),
-          ])),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFFC5DBD2), fontSize: 10,
+                fontWeight: FontWeight.w700)),
+          ]),
+        ),
       ),
     );
   }
@@ -121,4 +184,3 @@ class MatchLoadingCards extends StatelessWidget {
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .08),
       borderRadius: BorderRadius.circular(8)));
 }
-
