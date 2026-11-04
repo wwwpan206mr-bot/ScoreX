@@ -314,7 +314,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
         decoration: BoxDecoration(border: Border(top: BorderSide(color: scheme.outlineVariant))),
         child: NavigationBar(
           animationDuration: reducedMotion ? Duration.zero : const Duration(milliseconds: 230),
-          labelBehavior: MediaQuery.sizeOf(context).width < 360 || MediaQuery.textScalerOf(context).scale(12) > 18
+          labelBehavior: MediaQuery.sizeOf(context).width < 480 || MediaQuery.textScalerOf(context).scale(12) > 18
               ? NavigationDestinationLabelBehavior.onlyShowSelected : NavigationDestinationLabelBehavior.alwaysShow,
           selectedIndex: _navigationIndex, onDestinationSelected: _selectNavigation,
           destinations: const [
