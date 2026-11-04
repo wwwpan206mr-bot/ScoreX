@@ -273,7 +273,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final reducedMotion = MediaQuery.disableAnimationsOf(context);
     return Scaffold(
       appBar: AppBar(
         title: Row(children: [
