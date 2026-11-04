@@ -5,6 +5,7 @@ import '../models/ball_event.dart';
 import '../models/innings_summary.dart';
 import '../models/win_estimate.dart';
 import '../widgets/live_score_dashboard.dart';
+import 'advanced_analytics.dart';
 
 /// A reusable match-centre view. All values are supplied by a data source;
 /// missing data is shown explicitly instead of fabricated.
@@ -210,32 +211,10 @@ class CricketMatchCentre extends StatelessWidget {
       )).toList()));
 
   Widget _stats() {
-    final data = innings;
-    if (data == null) return _panel('Match analytics', _empty('statistics'));
-    String rate(double? value) => value?.toStringAsFixed(2) ?? '—';
-    final recent = deliveries.length <= 6 ? deliveries : deliveries.sublist(deliveries.length - 6);
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${data.runs}/${data.wickets} (${data.overs} ov)',
-            style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 14),
-          Wrap(spacing: 24, runSpacing: 12, children: [
-            _metric('CRR', rate(data.currentRunRate)),
-            _metric('RRR', rate(data.requiredRunRate)),
-            _metric('Need', data.runsNeeded?.toString() ?? '—'),
-            _metric('Balls left', data.ballsRemaining?.toString() ?? '—'),
-          ]),
-          const SizedBox(height: 20),
-          const Text('Recent deliveries'),
-          const SizedBox(height: 8),
-          if (recent.isEmpty) const Text('No delivery data')
-          else Wrap(spacing: 8, children: recent.map((b) =>
-            Chip(label: Text(b.marker))).toList()),
-        ],
-      ))),
-    ]);
+    return ScoreXAdvancedAnalytics(
+      deliveries: deliveries,
+      chasingProbability: completed ? null : estimate?.chasingPercent.toDouble(),
+    );
   }
 
   Widget _metric(String label, String value) => Column(
