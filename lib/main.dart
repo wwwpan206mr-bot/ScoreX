@@ -312,19 +312,38 @@ class _ScoreHomePageState extends State<ScoreHomePage> with WidgetsBindingObserv
       )),
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(border: Border(top: BorderSide(color: scheme.outlineVariant))),
-        child: NavigationBar(
-          animationDuration: reducedMotion ? Duration.zero : const Duration(milliseconds: 230),
-          labelBehavior: MediaQuery.sizeOf(context).width < 480 || MediaQuery.textScalerOf(context).scale(12) > 18
-              ? NavigationDestinationLabelBehavior.alwaysHide : NavigationDestinationLabelBehavior.alwaysShow,
-          selectedIndex: _navigationIndex, onDestinationSelected: _selectNavigation,
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
-            NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events_rounded), label: 'Series'),
-            NavigationDestination(icon: Icon(Icons.sports_cricket_outlined), selectedIcon: Icon(Icons.sports_cricket_rounded), label: 'Matches'),
-            NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups_rounded), label: 'Social'),
-            NavigationDestination(icon: Icon(Icons.ondemand_video_outlined), selectedIcon: Icon(Icons.ondemand_video_rounded), label: 'Videos'),
-          ],
-        ),
+        child: SafeArea(top: false, child: SizedBox(
+          height: 64,
+          child: Row(children: [
+            for (final item in <({IconData icon, IconData selectedIcon, String label})>[
+              (icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
+              (icon: Icons.emoji_events_outlined, selectedIcon: Icons.emoji_events_rounded, label: 'Series'),
+              (icon: Icons.sports_cricket_outlined, selectedIcon: Icons.sports_cricket_rounded, label: 'Matches'),
+              (icon: Icons.groups_outlined, selectedIcon: Icons.groups_rounded, label: 'Social'),
+              (icon: Icons.ondemand_video_outlined, selectedIcon: Icons.ondemand_video_rounded, label: 'Videos'),
+            ].asMap().entries)
+              Expanded(child: Semantics(
+                button: true, selected: _navigationIndex == item.key, label: item.value.label,
+                child: InkWell(
+                  onTap: () => _selectNavigation(item.key),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(_navigationIndex == item.key ? item.value.selectedIcon : item.value.icon,
+                        size: 23, color: _navigationIndex == item.key ? scheme.primary : scheme.onSurfaceVariant),
+                      if (MediaQuery.sizeOf(context).width >= 480) ...[
+                        const SizedBox(height: 3),
+                        Text(item.value.label, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 10, fontWeight: _navigationIndex == item.key
+                            ? FontWeight.w800 : FontWeight.w500,
+                            color: _navigationIndex == item.key ? scheme.primary : scheme.onSurfaceVariant)),
+                      ],
+                    ]),
+                  ),
+                ),
+              )),
+          ]),
+        )),
       ),
     );
   }
