@@ -83,7 +83,7 @@ class HomeOverview extends StatelessWidget {
                     color: Colors.white, fontSize: 9, letterSpacing: .7, fontWeight: FontWeight.w800)),
                 ]),
               );
-              if (constraints.maxWidth < 290) {
+              if (constraints.maxWidth < 380) {
                 return Column(crossAxisAlignment: CrossAxisAlignment.start,
                   children: [brand, const SizedBox(height: 8), status]);
               }
