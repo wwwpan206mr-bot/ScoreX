@@ -62,14 +62,16 @@ class HomeOverview extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 19, 20, 18),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(width: 7, height: 7, decoration: const BoxDecoration(
-                color: mint, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              const Text('SCOREX  •  MATCHDAY', style: TextStyle(
-                color: mint, fontSize: 10, letterSpacing: 1.7, fontWeight: FontWeight.w900)),
-              const Spacer(),
-              Container(
+            LayoutBuilder(builder: (context, constraints) {
+              final brand = Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 7, height: 7, decoration: const BoxDecoration(
+                  color: mint, shape: BoxShape.circle)),
+                const SizedBox(width: 8),
+                const Flexible(child: Text('SCOREX  •  MATCHDAY', maxLines: 1,
+                  overflow: TextOverflow.ellipsis, style: TextStyle(
+                    color: mint, fontSize: 10, letterSpacing: 1.7, fontWeight: FontWeight.w900))),
+              ]);
+              final status = Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(color: Colors.white.withValues(alpha: .09),
                   borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.white.withValues(alpha: .12))),
@@ -80,14 +82,21 @@ class HomeOverview extends StatelessWidget {
                   Text(stale ? 'SAVED' : 'LIVE CENTRE', style: const TextStyle(
                     color: Colors.white, fontSize: 9, letterSpacing: .7, fontWeight: FontWeight.w800)),
                 ]),
-              ),
-            ]),
+              );
+              if (constraints.maxWidth < 290) {
+                return Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [brand, const SizedBox(height: 8), status]);
+              }
+              return Row(children: [brand, const Spacer(), status]);
+            }),
             const SizedBox(height: 22),
             const Text('Every moment.\nEvery run.', style: TextStyle(
               color: Colors.white, fontSize: 29, height: 1.06,
               letterSpacing: -1.1, fontWeight: FontWeight.w900)),
             const SizedBox(height: 9),
             Text(date, style: const TextStyle(color: Color(0xFFB8D3C8), fontSize: 11)),
+            const SizedBox(height: 5),
+            const Text('Cricket starts here', style: TextStyle(color: Color(0xFF8CE6C3), fontSize: 11, fontWeight: FontWeight.w700)),
             const SizedBox(height: 22),
             LayoutBuilder(builder: (context, constraints) {
               final columns = constraints.maxWidth >= 250 &&
