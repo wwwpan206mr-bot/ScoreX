@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/cricket_match.dart';
 import '../theme/scorex_theme.dart';
@@ -69,10 +70,15 @@ class PremiumMatchCard extends StatelessWidget {
               Icon(Icons.chevron_right_rounded, size: 19, color: scheme.onSurfaceVariant),
             ]),
             if (match.status == MatchStatus.upcoming && match.startTime != null)
-              Padding(padding: const EdgeInsets.only(top: 8), child: Text(
-                '${MaterialLocalizations.of(context).formatShortDate(match.startTime!.toLocal())} • '
-                '${TimeOfDay.fromDateTime(match.startTime!.toLocal()).format(context)}',
-                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant))),
+              Padding(padding: const EdgeInsets.only(top: 10), child: Row(children: [
+                Icon(Icons.schedule_rounded, size: 14, color: scheme.secondary),
+                const SizedBox(width: 6),
+                Expanded(child: Text(
+                  '${MaterialLocalizations.of(context).formatShortDate(match.startTime!.toLocal())} • '
+                  '${TimeOfDay.fromDateTime(match.startTime!.toLocal()).format(context)}',
+                  style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant))),
+                _MatchCountdown(startTime: match.startTime!),
+              ])),
           ]);
         })),
       ),
@@ -117,5 +123,84 @@ class PremiumMatchCard extends StatelessWidget {
         Flexible(flex: 4, child: figures),
       ]);
     });
+  }
+}
+
+
+class _MatchCountdown extends StatefulWidget {
+  const _MatchCountdown({required this.startTime});
+  final DateTime startTime;
+
+  @override
+  State<_MatchCountdown> createState() => _MatchCountdownState();
+}
+
+class _MatchCountdownState extends State<_MatchCountdown> {
+  Timer? _timer;
+  late Duration _remaining;
+
+  @override
+  void initState() {
+    super.initState();
+    _remaining = widget.startTime.toLocal().difference(DateTime.now());
+    if (_remaining > Duration.zero) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        final next = widget.startTime.toLocal().difference(DateTime.now());
+        setState(() => _remaining = next.isNegative ? Duration.zero : next);
+        if (next <= Duration.zero) _timer?.cancel();
+      });
+    } else {
+      _remaining = Duration.zero;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _MatchCountdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.startTime != widget.startTime) {
+      _timer?.cancel();
+      _remaining = widget.startTime.toLocal().difference(DateTime.now());
+      if (_remaining > Duration.zero) {
+        _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+          if (!mounted) return;
+          final next = widget.startTime.toLocal().difference(DateTime.now());
+          setState(() => _remaining = next.isNegative ? Duration.zero : next);
+          if (next <= Duration.zero) _timer?.cancel();
+        });
+      } else {
+        _remaining = Duration.zero;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = _remaining.inDays;
+    final hours = _remaining.inHours.remainder(24).toString().padLeft(2, '0');
+    final minutes = _remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final label = _remaining == Duration.zero
+        ? 'STARTING'
+        : days > 0 ? '${days}d ${hours}h'
+        : '${hours}:${minutes}:${seconds}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Text(label, style: TextStyle(
+        fontSize: 10, letterSpacing: .4, fontWeight: FontWeight.w900,
+        color: Theme.of(context).colorScheme.secondary,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      )),
+    );
   }
 }
