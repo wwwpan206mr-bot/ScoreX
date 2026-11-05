@@ -89,7 +89,7 @@ class CricketMatchCentre extends StatelessWidget {
             updatedAt: deliveryUpdatedAt, source: deliverySource, stale: deliveryStale,
             deliveryMessage: deliveryMessage, completed: completed, status: status, venue: venue),
           _live(),
-          _scorecard(),
+          _scorecard(context),
           _squads(),
           _stats(),
           _info(),
@@ -177,28 +177,117 @@ class CricketMatchCentre extends StatelessWidget {
     );
   }
 
-  Widget _scorecard() {
-    if (batting.isEmpty && bowling.isEmpty) return _panel('Scorecard', _empty('scorecard'));
+  Widget _scorecard(BuildContext context) {
+    final hasPlayers = batting.isNotEmpty || bowling.isNotEmpty;
     return ListView(padding: const EdgeInsets.all(16), children: [
+      if (innings != null) ...[
+        _scorecardSummary(context),
+        const SizedBox(height: 14),
+      ],
+      _partnershipPanel(context),
+      const SizedBox(height: 14),
       if (batting.isNotEmpty) ...[
-        const Text('Batting', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        _dataTable(batting, const ['name', 'runs', 'balls', 'fours', 'sixes', 'strikeRate']),
+        _scorecardSection(context, 'Batting', Icons.sports_cricket,
+          _dataTable(batting, const ['name', 'runs', 'balls', 'fours', 'sixes', 'strikeRate'],
+            const ['Batter', 'R', 'B', '4s', '6s', 'SR'])),
+        const SizedBox(height: 14),
       ],
-      const SizedBox(height: 16),
       if (bowling.isNotEmpty) ...[
-        const Text('Bowling', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        _dataTable(bowling, const ['name', 'overs', 'maidens', 'runs', 'wickets', 'economy']),
+        _scorecardSection(context, 'Bowling', Icons.sports,
+          _dataTable(bowling, const ['name', 'overs', 'maidens', 'runs', 'wickets', 'economy'],
+            const ['Bowler', 'O', 'M', 'R', 'W', 'Econ'])),
       ],
+      if (!hasPlayers) ...[
+        const SizedBox(height: 8),
+        _panel('Player scorecard', _empty('batting and bowling figures')),
+      ],
+      const SizedBox(height: 8),
+      const Text('Figures appear only when supplied by the verified match feed.',
+        textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 11)),
     ]);
   }
 
-  Widget _dataTable(List<Map<String, String>> rows, List<String> keys) =>
+  Widget _scorecardSummary(BuildContext context) {
+    final data = innings!;
+    final scheme = Theme.of(context).colorScheme;
+    return Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(battingTeam ?? 'Current innings',
+          style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 6),
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('${data.runs}/${data.wickets}',
+            style: TextStyle(fontSize: 34, height: 1, fontWeight: FontWeight.w900, color: scheme.onSurface)),
+          const SizedBox(width: 10),
+          Padding(padding: const EdgeInsets.only(bottom: 3),
+            child: Text('(${data.overs} ov)', style: TextStyle(color: scheme.onSurfaceVariant))),
+        ]),
+        const SizedBox(height: 16),
+        Wrap(spacing: 24, runSpacing: 12, children: [
+          _scorecardMetric(context, 'CRR', data.currentRunRate?.toStringAsFixed(2) ?? '—'),
+          if (data.target != null) _scorecardMetric(context, 'TARGET', '${data.target}'),
+          if (data.requiredRunRate != null) _scorecardMetric(context, 'REQ. RATE', data.requiredRunRate!.toStringAsFixed(2)),
+          if (data.runsNeeded != null) _scorecardMetric(context, 'NEEDED', '${data.runsNeeded} runs'),
+        ]),
+      ],
+    )));
+  }
+
+  Widget _scorecardMetric(BuildContext context, String label, String value) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: TextStyle(fontSize: 10, letterSpacing: .7,
+        color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 3),
+      Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900,
+        color: Theme.of(context).colorScheme.onSurface)),
+    ],
+  );
+
+  Widget _partnershipPanel(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Row(
+    children: [
+      const Icon(Icons.handshake_outlined, size: 26, color: Color(0xFFFFC857)),
+      const SizedBox(width: 12),
+      const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Current partnership', style: TextStyle(fontWeight: FontWeight.w800)),
+        SizedBox(height: 4),
+        Text('Waiting for verified partnership figures from the live provider.',
+          style: TextStyle(fontSize: 12, color: Colors.grey)),
+      ])),
+      Icon(Icons.lock_clock_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
+    ],
+  )));
+
+  Widget _scorecardSection(BuildContext context, String title, IconData icon, Widget table) => Card(
+    clipBehavior: Clip.antiAlias,
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+        child: Row(children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+        ])),
+      table,
+    ]),
+  );
+
+  Widget _dataTable(List<Map<String, String>> rows, List<String> keys, List<String> headings) =>
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          columns: keys.map((key) => DataColumn(label: Text(key))).toList(),
+          columnSpacing: 20,
+          horizontalMargin: 16,
+          headingRowHeight: 42,
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 54,
+          columns: headings.asMap().entries.map((entry) => DataColumn(
+            numeric: entry.key > 0,
+            label: Text(entry.value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+          )).toList(),
           rows: rows.map((row) => DataRow(
-            cells: keys.map((key) => DataCell(Text(row[key] ?? '—'))).toList(),
+            cells: keys.map((key) => DataCell(Text(row[key] ?? '—',
+              style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
           )).toList(),
         ),
       );
