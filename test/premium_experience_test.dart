@@ -109,7 +109,7 @@ void main() {
     await tester.tap(find.text('Light').last);
     await tester.pump();
     expect(changedMode, ThemeMode.light);
-    expect(find.text('System default'), findsOneWidget);
+    expect(find.text('System'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
