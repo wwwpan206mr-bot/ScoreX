@@ -17,7 +17,9 @@ class WinEstimate {
         innings.runs < 0 || !{20, 50}.contains(innings.scheduledOvers)) return null;
     final prior = firstInningsRate != null && firstInningsRate.isFinite && firstInningsRate > 0
         ? firstInningsRate / 6 : innings.runs / innings.legalBalls;
-    final rate = ((innings.runs + 18 * prior) / (innings.legalBalls + 18)).clamp(0.0, 4.0);
+    final observedWeight = min(1.0, innings.legalBalls / 60.0);
+    final currentRate = innings.runs / innings.legalBalls;
+    final rate = (currentRate * observedWeight + prior * (1 - observedWeight)).clamp(0.0, 4.0);
     final wicketRate = ((innings.wickets + 1) / (innings.legalBalls + 24)).clamp(.005, .3);
     final random = Random(1947);
     var wins = 0;
