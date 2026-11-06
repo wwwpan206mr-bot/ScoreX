@@ -20,7 +20,7 @@ class WinEstimate {
     final observedWeight = min(1.0, innings.legalBalls / 60.0);
     final currentRate = innings.runs / innings.legalBalls;
     final rate = (currentRate * observedWeight + prior * (1 - observedWeight)).clamp(0.0, 4.0);
-    final wicketRate = ((innings.wickets + 1) / (innings.legalBalls + 24)).clamp(.005, .3);
+    final wicketRate = ((innings.wickets + 0.75) / (innings.legalBalls + 30)).clamp(.005, .22);
     final random = Random(1947);
     var wins = 0;
     var ties = 0;
