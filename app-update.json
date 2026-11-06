@@ -1,6 +1,6 @@
 {
-  "latestVersion": "1.0.0",
+  "latestVersion": "1.0.29",
   "forceUpdate": false,
-  "releaseNotes": "Initial ScoreX release.",
+  "releaseNotes": "Live match centre polish, pulsing LIVE status, and innings scorecard overview.",
   "downloadUrl": "https://github.com/wwwpan206mr-bot/ScoreX/releases"
 }
