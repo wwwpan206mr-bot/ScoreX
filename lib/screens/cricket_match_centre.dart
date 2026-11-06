@@ -79,8 +79,19 @@ class CricketMatchCentre extends StatelessWidget {
             ],
           ),
         ),
-        bottomNavigationBar: const SafeArea(
-          top: false, child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: ScoreXAdSlot())),
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!completed) const _PulsingLiveFooter(),
+            const SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: ScoreXAdSlot(),
+              ),
+            ),
+          ],
+        ),
         body: Column(children: [
           _scoreHeader(context),
           Expanded(child: TabBarView(children: [
@@ -180,6 +191,10 @@ class CricketMatchCentre extends StatelessWidget {
   Widget _scorecard(BuildContext context) {
     final hasPlayers = batting.isNotEmpty || bowling.isNotEmpty;
     return ListView(padding: const EdgeInsets.all(16), children: [
+      if (scores.isNotEmpty) ...[
+        _inningsOverview(context),
+        const SizedBox(height: 14),
+      ],
       if (innings != null) ...[
         _scorecardSummary(context),
         const SizedBox(height: 14),
@@ -205,6 +220,40 @@ class CricketMatchCentre extends StatelessWidget {
       const Text('Figures appear only when supplied by the verified match feed.',
         textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 11)),
     ]);
+  }
+
+  Widget _inningsOverview(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Innings overview',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            for (final score in scores)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(score['team'] ?? 'Innings',
+                        style: TextStyle(color: scheme.onSurface,
+                          fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(score['score'] ?? '—',
+                      style: TextStyle(color: scheme.primary,
+                        fontSize: 17, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _scorecardSummary(BuildContext context) {
@@ -321,3 +370,73 @@ class CricketMatchCentre extends StatelessWidget {
 }
 
 
+
+
+class _PulsingLiveFooter extends StatefulWidget {
+  const _PulsingLiveFooter();
+
+  @override
+  State<_PulsingLiveFooter> createState() => _PulsingLiveFooterState();
+}
+
+class _PulsingLiveFooterState extends State<_PulsingLiveFooter>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FadeTransition(
+            opacity: Tween<double>(begin: .25, end: 1).animate(
+              CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+            ),
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0xFFFF4D5A),
+                shape: BoxShape.circle,
+              ),
+              child: SizedBox(width: 8, height: 8),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text('LIVE',
+            style: TextStyle(
+              color: Color(0xFFFF4D5A),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('SCORE UPDATES',
+            style: TextStyle(
+              color: scheme.onSurfaceVariant,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: .8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
