@@ -679,30 +679,38 @@ class _ScoreXSettingsPageState extends State<ScoreXSettingsPage> {
                     title: Text('Appearance'),
                     subtitle: Text('Choose how ScoreX looks on your device'),
                   ),
-                  RadioListTile<ThemeMode>(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: const Icon(Icons.dark_mode_outlined),
-                    title: const Text('Dark mode'),
-                    value: ThemeMode.dark,
-                    groupValue: themeMode,
-                    onChanged: (value) { if (value != null) onThemeChanged(value); },
+                  SegmentedButton<ThemeMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: Icon(Icons.dark_mode_outlined),
+                        label: Text('Dark'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: Icon(Icons.light_mode_outlined),
+                        label: Text('Light'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: Icon(Icons.settings_suggest_outlined),
+                        label: Text('System'),
+                      ),
+                    ],
+                    selected: {themeMode},
+                    onSelectionChanged: (values) {
+                      if (values.isNotEmpty) onThemeChanged(values.first);
+                    },
+                    showSelectedIcon: false,
                   ),
-                  RadioListTile<ThemeMode>(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: const Icon(Icons.light_mode_outlined),
-                    title: const Text('Light mode'),
-                    value: ThemeMode.light,
-                    groupValue: themeMode,
-                    onChanged: (value) { if (value != null) onThemeChanged(value); },
-                  ),
-                  RadioListTile<ThemeMode>(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: const Icon(Icons.settings_suggest_outlined),
-                    title: const Text('System default'),
-                    subtitle: const Text('Follow your phone theme automatically'),
-                    value: ThemeMode.system,
-                    groupValue: themeMode,
-                    onChanged: (value) { if (value != null) onThemeChanged(value); },
+                  const SizedBox(height: 10),
+                  Text(
+                    themeMode == ThemeMode.dark
+                        ? 'Dark mode • deeper contrast for night viewing'
+                        : themeMode == ThemeMode.light
+                            ? 'Light mode • brighter cards and easier daytime reading'
+                            : 'System • automatically follows your phone theme',
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
