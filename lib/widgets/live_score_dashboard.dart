@@ -41,7 +41,7 @@ class LiveScoreDashboard extends StatelessWidget {
     return ListView(key: const PageStorageKey('live-dashboard'), padding: const EdgeInsets.all(12), children: [
       if (stale) _card(Row(children: [
         Icon(Icons.schedule, color: gold), SizedBox(width: 10),
-        Expanded(child: Text('Updates delayed • showing the last received deliveries')),
+        Expanded(child: Text('Updates delayed • showing the last verified score')),
       ])),
       Text(completed ? 'Match result' : 'Live match centre',
         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
