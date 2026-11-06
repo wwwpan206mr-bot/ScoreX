@@ -179,7 +179,7 @@ class _LiveMatchCentreState extends State<LiveMatchCentre> with WidgetsBindingOb
       if (!unchanged) setState(() { _feed = feed; _deliveryFailed = false; });
     } catch (_) {
       if (_current(id, generation)) {
-        _nextDeliveryAttempt = DateTime.now().add(const Duration(seconds: 20));
+        _nextDeliveryAttempt = DateTime.now().add(Duration(seconds: _failures > 2 ? 45 : 20));
         if (!_deliveryFailed) setState(() => _deliveryFailed = true);
       }
     }
