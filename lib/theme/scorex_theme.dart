@@ -22,6 +22,7 @@ abstract final class ScoreXTheme {
     final base = ThemeData(useMaterial3: true, brightness: brightness, colorScheme: scheme);
     return base.copyWith(
       scaffoldBackgroundColor: background,
+      canvasColor: background,
       textTheme: base.textTheme.apply(fontFamily: 'Roboto').copyWith(
         headlineLarge: base.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900, letterSpacing: -1.4),
         headlineSmall: base.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -.6),
@@ -61,7 +62,8 @@ abstract final class ScoreXTheme {
         shape: const StadiumBorder(), side: BorderSide(color: scheme.outlineVariant),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface, indicatorColor: dark ? mint.withValues(alpha: .17) : const Color(0xFFE5EEFF),
+        backgroundColor: surface, indicatorColor: dark ? mint.withValues(alpha: .20) : const Color(0xFFE5EEFF),
+        surfaceTintColor: Colors.transparent,
         elevation: 0, height: 70,
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
           color: states.contains(WidgetState.selected) ? scheme.primary : scheme.onSurfaceVariant,
@@ -84,7 +86,10 @@ abstract final class ScoreXTheme {
         titleTextStyle: base.textTheme.titleSmall?.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w700),
         subtitleTextStyle: base.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, height: 1.4),
       ),
-      snackBarTheme: SnackBarThemeData(behavior: SnackBarBehavior.floating,
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: dark ? const Color(0xFF183128) : const Color(0xFF163D30),
+        contentTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
