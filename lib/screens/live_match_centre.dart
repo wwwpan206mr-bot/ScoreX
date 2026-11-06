@@ -174,7 +174,8 @@ class _LiveMatchCentreState extends State<LiveMatchCentre> with WidgetsBindingOb
       final unchanged = _feed.updatedAt == feed.updatedAt && _feed.source == feed.source &&
           _feed.stale == feed.stale && _feed.reason == feed.reason &&
           listEquals(_feed.deliveries, feed.deliveries) && !_deliveryFailed;
-      _nextDeliveryAttempt = feed.source == null ? DateTime.now().add(const Duration(seconds: 60)) : null;
+      final retry = feed.source == null ? Duration(seconds: _failures > 2 ? 45 : 15) : null;
+      _nextDeliveryAttempt = retry == null ? null : DateTime.now().add(retry);
       if (!unchanged) setState(() { _feed = feed; _deliveryFailed = false; });
     } catch (_) {
       if (_current(id, generation)) {
