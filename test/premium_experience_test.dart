@@ -106,7 +106,7 @@ void main() {
       themeMode: ThemeMode.dark, notificationsEnabled: false, onThemeChanged: (value) => changedMode = value,
       onNotificationsChanged: (_) {},
     )));
-    await tester.tap(find.text('Light mode'));
+    await tester.tap(find.text('Light').last);
     await tester.pump();
     expect(changedMode, ThemeMode.light);
     expect(find.text('System default'), findsOneWidget);
